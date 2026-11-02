@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#f5f4ef">
+  <meta name="description" content="以毫米为单位，重新安排你的家。可编辑墙体、门窗与家具的 Three.js 户型工作台。">
+  <title>居所 · 户型编辑器</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232c5e50'/%3E%3Cpath d='M8 24V13l8-6 8 6v11h-6v-8h-4v8z' fill='none' stroke='%23fff' stroke-width='2'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="./style.css">
+  <script type="importmap">{"imports":{"three":"./vendor/three.module.js","three/addons/controls/OrbitControls.js":"./vendor/OrbitControls.js"}}</script>
+</head>
+<body>
+  <svg class="icon-defs" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v11h-7v-8h-4v8H3z"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></symbol>
+    <symbol id="i-cube" viewBox="0 0 24 24"><path d="m12 3 9 5v9l-9 5-9-5V8zm0 10 9-5M12 13 3 8m9 5v9M7 5.8l9 5"/></symbol>
+    <symbol id="i-wall" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="1"/><path d="M3 12h18M10 5v7M15 12v7"/></symbol>
+    <symbol id="i-door" viewBox="0 0 24 24"><path d="M5 21V3h14v18M3 21h18M9 3v18m6-9h1"/></symbol>
+    <symbol id="i-window" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="1"/><path d="M12 3v18M4 12h16"/></symbol>
+    <symbol id="i-sofa" viewBox="0 0 24 24"><path d="M5 11V6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v5M5 15h14M5 20v-2m14 2v-2"/><path d="M3 10a2 2 0 0 1 2 2v3h14v-3a2 2 0 0 1 4 0v5a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1v-5a2 2 0 0 1 2-2Z"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3m-4 5v2"/></symbol>
+    <symbol id="i-unlock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 7.5-2m-3.5 10v2"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+    <symbol id="i-move" viewBox="0 0 24 24"><path d="M12 3v18M3 12h18M8 7l4-4 4 4m-8 10 4 4 4-4M7 8l-4 4 4 4m10-8 4 4-4 4"/></symbol>
+    <symbol id="i-rotate" viewBox="0 0 24 24"><path d="M3 10a9 9 0 1 1 1 8M3 4v6h6"/></symbol>
+    <symbol id="i-undo" viewBox="0 0 24 24"><path d="m9 5-6 6 6 6M3 11h11a6 6 0 0 1 6 7"/></symbol>
+    <symbol id="i-redo" viewBox="0 0 24 24"><path d="m15 5 6 6-6 6m6-6H10a6 6 0 0 0-6 7"/></symbol>
+    <symbol id="i-fit" viewBox="0 0 24 24"><path d="M9 3H3v6m12-6h6v6M3 15v6h6m12-6v6h-6"/><rect x="8" y="8" width="8" height="8" rx="1"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V3m-5 5 5-5 5 5M4 16v5h16v-5"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="13" height="13" rx="2"/><path d="M16 8V3H3v13h5"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8" cy="8" r="1.5"/><path d="m3 17 5-5 4 4 4-6 5 7"/></symbol>
+    <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 8a2.5 2.5 0 0 1 5 0c0 2-2.5 2-2.5 4m0 4h.01"/></symbol>
+  </defs></svg>
+  <header class="app-header">
+    <a class="brand" href="./" aria-label="居所首页"><span class="brand-mark"><svg><use href="#i-home"/></svg></span><span>居所<small>PLAN STUDIO</small></span></a>
+    <div class="document-heading"><input id="project-title" aria-label="户型名称" value="极简公寓 · 空间方案"><span class="save-status" id="save-status"><span class="status-dot"></span>已保存在此浏览器</span></div>
+    <div class="header-actions"><button class="button quiet" id="help-btn" aria-label="操作指南"><svg><use href="#i-help"/></svg></button><button class="button quiet" id="import-btn"><svg><use href="#i-upload"/></svg><span>导入</span></button><button class="button primary" id="export-btn"><svg><use href="#i-download"/></svg><span>导出方案</span></button></div>
+  </header>
+  <main class="app-layout">
+    <aside class="objects-panel" aria-label="户型对象列表">
+      <div class="panel-heading"><h2>空间对象 <span id="object-count">—</span></h2><button class="icon-button" id="add-btn" aria-label="添加对象"><svg><use href="#i-plus"/></svg></button></div>
+      <label class="search-field"><svg><use href="#i-search"/></svg><input id="object-search" placeholder="搜索名称、房间或编号" aria-label="搜索对象"></label>
+      <div class="filter-tabs" role="group" aria-label="对象类型"><button data-filter="all" class="active" aria-pressed="true">全部</button><button data-filter="wall" aria-pressed="false">墙体</button><button data-filter="opening" aria-pressed="false">门窗</button><button data-filter="furniture" aria-pressed="false">家具</button></div>
+      <div id="object-tree" class="object-tree"></div>
+      <div class="objects-bottom"><span class="small-label">你的空间，每一处都可调整</span><button class="button full" id="reset-btn"><svg><use href="#i-rotate"/></svg>恢复原始户型</button></div>
+    </aside>
+    <section class="workspace" aria-label="户型画布">
+      <div class="workspace-toolbar">
+        <div class="view-switch" role="group" aria-label="视图"><button class="active" id="view-2d" aria-pressed="true"><svg><use href="#i-grid"/></svg>二维平面</button><button id="view-3d" aria-pressed="false"><svg><use href="#i-cube"/></svg>三维预览</button></div>
+        <div class="history-actions"><button class="icon-button" id="undo-btn" aria-label="撤销 Ctrl Z" disabled><svg><use href="#i-undo"/></svg></button><button class="icon-button" id="redo-btn" aria-label="重做 Ctrl Shift Z" disabled><svg><use href="#i-redo"/></svg></button><span class="toolbar-divider"></span><button class="icon-button active" id="move-btn" aria-label="拖动位置 V" aria-pressed="true"><svg><use href="#i-move"/></svg></button><button class="icon-button" id="rotate-btn" aria-label="旋转方向 R" aria-pressed="false"><svg><use href="#i-rotate"/></svg></button></div>
+      </div>
+      <div class="canvas-wrap">
+        <div class="canvas-caption"><span class="eyebrow">APARTMENT / 01</span><span id="view-caption">让空间，随想法改变。</span></div>
+        <div id="scene" aria-label="可编辑户型图" role="application"></div>
+        <div class="canvas-tools"><button class="icon-button" id="zoom-in" aria-label="放大"><svg><use href="#i-plus"/></svg></button><button class="icon-button" id="zoom-out" aria-label="缩小"><svg><use href="#i-minus"/></svg></button><span></span><button class="icon-button" id="fit-btn" aria-label="适应画布"><svg><use href="#i-fit"/></svg></button></div>
+        <div class="canvas-mode-hint" id="mode-hint"><span class="hint-dot"></span>点击选择 · 拖动移动 · 手柄旋转</div>
+        <div class="canvas-error" id="canvas-error" hidden></div>
+      </div>
+      <div class="view-options"><div><label><input type="checkbox" id="option-snap" checked>吸附 <span>50 mm</span></label><label><input type="checkbox" id="option-grid" checked>网格</label><label><input type="checkbox" id="option-labels" checked>房间名</label><label><input type="checkbox" id="option-dimensions" checked>尺寸</label><label><input type="checkbox" id="option-reference">原图底图</label><label id="fullheight-label" hidden><input type="checkbox" id="option-fullHeight">完整墙高</label></div><span class="unit-tag">单位 · mm</span></div>
+    </section>
+    <aside class="inspector" aria-label="对象属性"><div id="inspector-content"></div></aside>
+  </main>
+  <footer class="statusbar"><span><i></i>本地编辑 · Three.js</span><span id="selection-status" aria-live="polite">正在载入户型…</span><span class="keyboard-hints"><kbd>V</kbd> 移动 <kbd>R</kbd> 旋转 <kbd>Del</kbd> 删除</span></footer>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <input type="file" id="import-file" accept=".json,application/json" hidden>
+  <dialog id="export-dialog"><div class="dialog-heading"><div><span class="eyebrow">KEEP YOUR IDEAS</span><h2>保存这份空间方案</h2></div><button class="icon-button" data-close aria-label="关闭"><svg><use href="#i-close"/></svg></button></div><p>方案文件保留每个对象的名称、尺寸与位置，随时可以继续编辑。</p><button class="export-choice" id="download-json"><span class="file-icon">{ }</span><span><strong>可编辑方案</strong><small>JSON · 包含全部对象与参数</small></span><svg><use href="#i-download"/></svg></button><button class="export-choice" id="download-png"><span class="file-icon"><svg><use href="#i-image"/></svg></span><span><strong>当前视图图片</strong><small>PNG · 用于记录和分享</small></span><svg><use href="#i-download"/></svg></button></dialog>
+  <dialog id="add-dialog"><div class="dialog-heading"><div><span class="eyebrow">MAKE ROOM</span><h2>添加空间对象</h2></div><button class="icon-button" data-close aria-label="关闭"><svg><use href="#i-close"/></svg></button></div><form id="add-form"><label class="field">对象类别<select id="add-type"><option value="furniture">家具与设备</option><option value="wall">墙体</option><option value="door">门</option><option value="window">窗</option></select></label><label class="field" id="add-kind-field">物件<select id="add-kind"></select></label><label class="field">名称<input id="add-name" placeholder="可留空，自动命名" maxlength="80"></label><p class="note">新对象放在画布中部，可拖动定位。门窗可在属性中关联墙体。</p><button class="button primary full" type="submit"><svg><use href="#i-plus"/></svg>添加到户型</button></form></dialog>
+  <dialog id="confirm-dialog"><div class="dialog-heading"><h2 id="confirm-title">确认操作</h2><button class="icon-button" data-close aria-label="关闭"><svg><use href="#i-close"/></svg></button></div><p id="confirm-text"></p><div class="dialog-actions"><button class="button" data-close>取消</button><button class="button primary" id="confirm-yes">确认</button></div></dialog>
+  <dialog id="help-dialog"><div class="dialog-heading"><div><span class="eyebrow">A LITTLE GUIDANCE</span><h2>把想法放进空间</h2></div><button class="icon-button" data-close aria-label="关闭"><svg><use href="#i-close"/></svg></button></div><div class="help-rows"><p><strong>选择与编辑</strong>点击图形或左侧名称，在右侧输入精确尺寸。数值单位统一为毫米。</p><p><strong>移动与旋转</strong>二维模式拖动对象移动；拖动旋转手柄或按 R 后拖动调整方向。吸附开启时按 50 mm、15° 对齐。</p><p><strong>查看空间</strong>滚轮缩放，右键拖动平移。三维模式拖动空白处环绕，属性面板仍可编辑。</p><p><strong>墙与门窗</strong>墙体可联动直接连接的端点。房间底色与名称作为原图分区参考，不随墙自动划分。门窗关联墙体后随墙移动；通过“距起点”调整位置，通过开启方向调整门扇。</p><p><strong>保留方案</strong>修改自动保存在当前浏览器。导出 JSON 可备份或在另一设备继续编辑。</p></div><div class="source-note">本图根据提供的 PNG 重建。未标注的家具、洞口与墙厚采用估算尺寸，可按实测修正。</div></dialog>
+  <script type="module" src="./src/app.js"></script>
+</body>
+</html>
