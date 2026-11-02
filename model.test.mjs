@@ -1,9 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createInitialPlan, createObject, validatePlan, updateObject, removeObject, duplicateObject, wallEndpoints } from './dist/src/model.js';
+import { createInitialPlan, createObject, validatePlan, updateObject, removeObject, duplicateObject, wallEndpoints, mirrorPlanHorizontally, applyPublishedPlanEdits } from './dist/src/model.js';
+
+// Existing geometry fixtures use the source drawing orientation.
+function sourceOrientationPlan() {
+  return mirrorPlanHorizontally(createInitialPlan());
+}
+
 
 test('the seed preserves annotated bounds and gives all objects unique editable names', () => {
-  const plan = createInitialPlan();
+  const plan = sourceOrientationPlan();
   assert.equal(plan.objects.length, 87);
   assert.equal(new Set(plan.objects.map(o => o.id)).size, plan.objects.length);
   assert.ok(plan.objects.every(o => o.name && Number.isFinite(o.width)));
@@ -11,25 +17,25 @@ test('the seed preserves annotated bounds and gives all objects unique editable 
   assert.equal(plan.objects.find(o => o.id === 'wall-south').width, 9800);
   assert.equal(plan.objects.find(o => o.id === 'wall-west').width, 10300);
   plan.objects[0].name = 'changed';
-  assert.notEqual(createInitialPlan().objects[0].name, 'changed');
+  assert.notEqual(sourceOrientationPlan().objects[0].name, 'changed');
 });
 
 test('invalid imports are rejected before rendering', () => {
   for (const patch of [{ width: -1 }, { x: Infinity }, { name: '' }, { type: 'script' }]) {
-    const plan = createInitialPlan();
+    const plan = sourceOrientationPlan();
     Object.assign(plan.objects[0], patch);
     assert.throws(() => validatePlan(plan));
   }
-  const duplicate = createInitialPlan();
+  const duplicate = sourceOrientationPlan();
   duplicate.objects[1].id = duplicate.objects[0].id;
   assert.throws(() => validatePlan(duplicate), /重复/);
-  const dangling = createInitialPlan();
+  const dangling = sourceOrientationPlan();
   dangling.objects.find(o => o.type === 'door').wallId = 'missing';
   assert.throws(() => validatePlan(dangling), /不存在/);
 });
 
 test('wall translation carries attached doors and moves joined neighbour endpoints', () => {
-  const plan = createInitialPlan();
+  const plan = sourceOrientationPlan();
   const id = 'wall-bedroom1-door';
   const before = plan.objects.find(o => o.id === id);
   const door = plan.objects.find(o => o.id === 'door-bedroom1');
@@ -42,7 +48,7 @@ test('wall translation carries attached doors and moves joined neighbour endpoin
 });
 
 test('resizing a wall around a fixed start preserves the start point', () => {
-  const plan = createInitialPlan();
+  const plan = sourceOrientationPlan();
   const wall = plan.objects.find(o => o.id === 'wall-east-step');
   const oldStart = wallEndpoints(wall).a;
   updateObject(plan, wall.id, { width: wall.width + 400 }, { anchor: 'start', linked: false });
@@ -50,7 +56,7 @@ test('resizing a wall around a fixed start preserves the start point', () => {
 });
 
 test('too-short walls and overlapping openings fail atomically', () => {
-  const plan = createInitialPlan();
+  const plan = sourceOrientationPlan();
   const serialized = JSON.stringify(plan);
   assert.throws(() => updateObject(plan, 'wall-north', { width: 900 }), /长度不足|重叠/);
   assert.equal(JSON.stringify(plan), serialized);
@@ -59,7 +65,7 @@ test('too-short walls and overlapping openings fail atomically', () => {
 });
 
 test('attached opening moves project onto their wall and free rotation requires detach', () => {
-  const plan = createInitialPlan();
+  const plan = sourceOrientationPlan();
   updateObject(plan, 'door-entry', { x: 8600, y: 3500 });
   assert.equal(plan.objects.find(o => o.id === 'door-entry').x, 8400);
   assert.equal(plan.objects.find(o => o.id === 'door-entry').y, 3500);
@@ -70,7 +76,7 @@ test('attached opening moves project onto their wall and free rotation requires 
 });
 
 test('duplicate furniture is independent; deleting a wall also removes its openings', () => {
-  const plan = createInitialPlan();
+  const plan = sourceOrientationPlan();
   const old = plan.objects.find(o => o.id === 'dining-table');
   const copy = duplicateObject(plan, old.id);
   assert.notEqual(copy.id, old.id);
@@ -91,7 +97,7 @@ test('new objects have valid dimensions and stable IDs', () => {
 });
 
 test('locked objects reject geometry changes atomically while allowing metadata and no-ops', () => {
-  const plan = createInitialPlan();
+  const plan = sourceOrientationPlan();
   const id = 'dining-table';
   updateObject(plan, id, { locked: true });
   const original = plan.objects.find(o => o.id === id);
@@ -109,7 +115,7 @@ test('locked objects reject geometry changes atomically while allowing metadata 
 });
 
 test('locked openings cannot change attachment, offset, hinge, or swing', () => {
-  const plan = createInitialPlan();
+  const plan = sourceOrientationPlan();
   updateObject(plan, 'door-entry', { locked: true });
   const snapshot = JSON.stringify(plan);
   for (const patch of [{ wallId: null }, { offset: 3500 }, { hinge: 'left' }, { swing: -1 }]) {
@@ -121,7 +127,7 @@ test('locked openings cannot change attachment, offset, hinge, or swing', () => 
 });
 
 test('connected locked walls prevent an indirect transformation but not a no-op', () => {
-  const plan = createInitialPlan();
+  const plan = sourceOrientationPlan();
   updateObject(plan, 'wall-left-kitchen', { locked: true });
   const snapshot = JSON.stringify(plan);
   assert.throws(() => updateObject(plan, 'wall-bedroom1-door', { x: 3500 }), /卧室一与厨房隔墙.*解锁/);
@@ -131,7 +137,7 @@ test('connected locked walls prevent an indirect transformation but not a no-op'
 });
 
 test('locked attached openings prevent wall changes that move or thicken them', () => {
-  const plan = createInitialPlan();
+  const plan = sourceOrientationPlan();
   updateObject(plan, 'door-entry', { locked: true });
   const snapshot = JSON.stringify(plan);
   assert.throws(() => updateObject(plan, 'wall-east-upper', { x: 8500 }, { linked: false }), /入户门.*解锁/);
@@ -146,8 +152,132 @@ test('locked attached openings prevent wall changes that move or thicken them', 
 
 test('malformed room entries return a useful validation error instead of TypeError', () => {
   for (const invalidRoom of [null, 42, [], 'room']) {
-    const plan = createInitialPlan();
+    const plan = sourceOrientationPlan();
     plan.rooms = [invalidRoom];
     assert.throws(() => validatePlan(plan), error => error instanceof Error && !(error instanceof TypeError) && /房间分区数据格式不正确/.test(error.message));
   }
+});
+
+const near = (actual, expected, label = '') => assert.ok(Math.abs(actual - expected) < 1e-7, `${label}: ${actual} ≈ ${expected}`);
+const byId = (plan, id) => plan.objects.find(object => object.id === id);
+function localPoint(object, x, y) {
+  const angle = object.rotation * Math.PI / 180;
+  const depth = y * (object.mirrorY ? -1 : 1);
+  return { x: object.x + Math.cos(angle) * x - Math.sin(angle) * depth, y: object.y + Math.sin(angle) * x + Math.cos(angle) * depth };
+}
+
+test('published seed is mirrored and does not reapply the published edit', () => {
+  const plan = createInitialPlan();
+  near(byId(plan, 'door-entry').x, 1400);
+  near(byId(plan, 'bedroom1-bed').x, 8590);
+  const door = byId(plan, 'door-bath2');
+  assert.equal(door.kind, 'sliding');
+  near(door.x, 7950);
+  near(door.y, 5600);
+  assert.equal(door.offset, 1850);
+  const saved = JSON.stringify(plan);
+  assert.equal(applyPublishedPlanEdits(plan), false);
+  assert.equal(JSON.stringify(plan), saved);
+});
+
+test('whole-plan mirror reflects walls, attached openings and asymmetric local geometry', () => {
+  const plan = sourceOrientationPlan();
+  updateObject(plan, 'study-chair-north', { rotation: 37, locked: true, visible: false });
+  const before = structuredClone(plan);
+  mirrorPlanHorizontally(plan);
+  assert.equal(plan.objects.length, before.objects.length);
+  for (const object of plan.objects) {
+    const original = byId(before, object.id);
+    near(object.x, 9800 - original.x, object.id);
+    near(object.y, original.y, object.id);
+    for (const field of ['name', 'width', 'depth', 'height', 'locked', 'visible', 'wallId', 'offset', 'hinge', 'swing']) assert.equal(object[field], original[field], `${object.id}.${field}`);
+    assert.equal(object.mirrorY, !original.mirrorY);
+    for (const [x, y] of [[-object.width / 2, -object.depth / 2], [object.width * .37, object.depth * .24]]) {
+      const source = localPoint(original, x, y), reflected = localPoint(object, x, y);
+      near(reflected.x, 9800 - source.x, `${object.id} local X`);
+      near(reflected.y, source.y, `${object.id} local Y`);
+    }
+    if (object.type === 'wall') {
+      const source = wallEndpoints(original), reflected = wallEndpoints(object);
+      for (const end of ['a', 'b']) {
+        near(reflected[end].x, 9800 - source[end].x);
+        near(reflected[end].y, source[end].y);
+      }
+    }
+  }
+  for (const room of plan.rooms) {
+    const original = before.rooms.find(value => value.id === room.id);
+    near(room.x, 9800 - original.x);
+    assert.deepEqual({ ...room, x: original.x }, original);
+  }
+  assert.deepEqual(plan.meta.referenceTransform, { scaleX: -1, offsetX: 9800 });
+  assert.deepEqual(validatePlan(JSON.parse(JSON.stringify(plan))), plan);
+  mirrorPlanHorizontally(plan);
+  for (const object of plan.objects) {
+    const original = byId(before, object.id);
+    for (const field of ['x', 'y', 'rotation']) near(object[field], original[field]);
+    assert.deepEqual({ ...object, x: original.x, y: original.y, rotation: original.rotation }, original);
+  }
+  assert.deepEqual(plan.rooms, before.rooms);
+  assert.deepEqual(plan.meta, before.meta);
+});
+
+test('published mirror migrates saved edits once, including prior bathroom and balcony corrections', () => {
+  const plan = sourceOrientationPlan();
+  plan.meta.appliedEdits = [];
+  updateObject(plan, 'living-coffee', { name: '我的茶几', x: 5100, width: 820 });
+  updateObject(plan, 'door-bath2', { kind: 'single', offset: 2850, name: '卫生间二房门' });
+  plan.objects.push({ ...createObject('wall'), id: 'wall-bedroom2-balcony', x: 1700, y: 8800, width: 3400 });
+  assert.equal(applyPublishedPlanEdits(plan), true);
+  const coffee = byId(plan, 'living-coffee');
+  assert.equal(coffee.name, '我的茶几');
+  assert.equal(coffee.width, 820);
+  near(coffee.x, 4700);
+  assert.equal(byId(plan, 'wall-bedroom2-balcony'), undefined);
+  const door = byId(plan, 'door-bath2');
+  assert.equal(door.kind, 'sliding');
+  assert.equal(door.name, '卫生间二推拉门');
+  near(door.x, 7950);
+  assert.equal(door.offset, 1850);
+  const saved = JSON.stringify(plan);
+  assert.equal(applyPublishedPlanEdits(plan), false);
+  assert.equal(JSON.stringify(plan), saved);
+  // Pressing the mirror button again intentionally reverses it, and reload keeps it.
+  mirrorPlanHorizontally(plan);
+  near(byId(plan, 'door-bath2').x, 1850);
+  assert.equal(applyPublishedPlanEdits(plan), false);
+});
+
+test('mirror uses rotated object bounds without walls and handles room-only/empty plans', () => {
+  const furniture = { ...createObject('furniture', 'sofa'), x: -250, y: 600, rotation: 35 };
+  const second = { ...createObject('furniture', 'chair'), x: 1200, y: 1000, rotation: 71 };
+  const plan = validatePlan({ version: 1, unit: 'mm', objects: [furniture, second], rooms: [], meta: {} });
+  const extents = plan.objects.flatMap(object => {
+    const a = object.rotation * Math.PI / 180;
+    const half = (Math.abs(Math.cos(a)) * object.width + Math.abs(Math.sin(a)) * object.depth) / 2;
+    return [object.x - half, object.x + half];
+  });
+  const sum = Math.min(...extents) + Math.max(...extents);
+  mirrorPlanHorizontally(plan);
+  near(plan.objects[0].x, sum - furniture.x);
+  const rooms = validatePlan({ version: 1, unit: 'mm', objects: [], rooms: [{ id: 'a', name: 'A', x: 100, y: 0, width: 1000, depth: 1000 }, { id: 'b', name: 'B', x: 2000, y: 0, width: 400, depth: 500 }] });
+  mirrorPlanHorizontally(rooms);
+  near(rooms.rooms[0].x, 1700);
+  near(rooms.rooms[1].x, -200);
+  const empty = validatePlan({ version: 1, unit: 'mm', objects: [], rooms: [] });
+  const saved = JSON.stringify(empty);
+  mirrorPlanHorizontally(empty);
+  assert.equal(JSON.stringify(empty), saved);
+});
+
+test('mirror validates atomically and local reflection remains geometry when locked', () => {
+  const plan = sourceOrientationPlan();
+  updateObject(plan, 'living-coffee', { x: -99000, locked: true });
+  const saved = JSON.stringify(plan);
+  assert.throws(() => mirrorPlanHorizontally(plan), /X 坐标/);
+  assert.equal(JSON.stringify(plan), saved);
+  assert.throws(() => updateObject(plan, 'living-coffee', { mirrorY: true }), /已锁定/);
+  assert.equal(JSON.stringify(plan), saved);
+  plan.meta.referenceTransform = { scaleX: 0, offsetX: 0 };
+  assert.throws(() => validatePlan(plan), /底图镜像/);
 });

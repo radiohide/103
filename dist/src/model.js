@@ -7,9 +7,10 @@ const EPS = 5;
 const BALCONY_EDIT = 'remove-bedroom-balcony-partition-2026-11-02';
 const LIVING_BALCONY_EDIT = 'remove-living-study-balcony-partitions-2026-11-02';
 const BATH2_SLIDING_EDIT = 'correct-bathroom2-sliding-door-2026-11-02';
+const HORIZONTAL_MIRROR_EDIT = 'mirror-plan-horizontal-2026-11-02';
 const deg = value => ((value % 360) + 360) % 360;
 const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
-const GEOMETRY_FIELDS = ['x', 'y', 'width', 'depth', 'height', 'rotation', 'wallId', 'offset', 'sill', 'hinge', 'swing', 'kind'];
+const GEOMETRY_FIELDS = ['x', 'y', 'width', 'depth', 'height', 'rotation', 'mirrorY', 'wallId', 'offset', 'sill', 'hinge', 'swing', 'kind'];
 const equivalent = (field, a, b) => {
   if (field === 'wallId') return (a || null) === (b || null);
   if (typeof a === 'number' && typeof b === 'number' && Number.isFinite(a) && Number.isFinite(b)) {
@@ -103,6 +104,7 @@ function normalizeObject(source) {
     depth: num(source.depth, '深度 / 厚度', 5, 50000),
     height: num(source.height ?? (source.type === 'wall' ? 2800 : 800), '高度', 1, 15000),
     rotation: deg(num(source.rotation ?? 0, '角度', -36000, 36000)),
+    mirrorY: source.mirrorY === true,
     visible: source.visible !== false, locked: source.locked === true,
     estimated: source.estimated !== false,
   };
@@ -147,7 +149,54 @@ export function validatePlan(input) {
   });
   const plan = { version: 1, title: typeof input.title === 'string' ? input.title.slice(0, 200) : '我的户型', unit: 'mm', objects, rooms };
   if (input.meta && typeof input.meta === 'object' && !Array.isArray(input.meta)) plan.meta = clone(input.meta);
+  if (plan.meta) {
+    const transform = plan.meta.referenceTransform;
+    if (transform != null && (typeof transform !== 'object' || Array.isArray(transform) || ![1, -1].includes(transform.scaleX))) throw new Error('底图镜像参数无效');
+    plan.meta.referenceTransform = { scaleX: transform?.scaleX ?? 1, offsetX: num(transform?.offsetX ?? 0, '底图偏移', -400000, 400000) };
+  }
   resolveOpenings(plan);
+  return plan;
+}
+
+/** Reflect the entire plan through the centre of its wall-centreline bounds.
+ * R(180-angle) * local-depth reflection preserves handedness of doors/furniture.
+ * Wall start/end identities remain stable, so attached opening offsets do too.
+ */
+export function mirrorPlanHorizontally(plan) {
+  const candidate = validatePlan(plan);
+  const walls = candidate.objects.filter(object => object.type === 'wall');
+  let extents;
+  if (walls.length) {
+    extents = walls.flatMap(wall => {
+      const { a, b } = wallEndpoints(wall);
+      return [a.x, b.x];
+    });
+  } else if (candidate.objects.length) {
+    extents = candidate.objects.flatMap(object => {
+      const angle = object.rotation * Math.PI / 180;
+      const half = (Math.abs(Math.cos(angle)) * object.width + Math.abs(Math.sin(angle)) * object.depth) / 2;
+      return [object.x - half, object.x + half];
+    });
+  } else {
+    extents = candidate.rooms.flatMap(room => [room.x - room.width / 2, room.x + room.width / 2]);
+  }
+  if (!extents.length) return plan;
+  const axisSum = Math.min(...extents) + Math.max(...extents);
+  for (const object of candidate.objects) {
+    object.x = axisSum - object.x;
+    object.rotation = deg(180 - object.rotation);
+    object.mirrorY = !object.mirrorY;
+  }
+  for (const room of candidate.rooms) room.x = axisSum - room.x;
+  candidate.meta ??= {};
+  const reference = candidate.meta.referenceTransform ?? { scaleX: 1, offsetX: 0 };
+  candidate.meta.referenceTransform = { scaleX: -reference.scaleX, offsetX: axisSum - reference.offsetX };
+  // Whole-plan reflection includes locked objects but preserves their lock flags.
+  // Commit only after all reflected coordinates and attached openings validate.
+  const checked = validatePlan(candidate);
+  plan.objects = checked.objects;
+  plan.rooms = checked.rooms;
+  plan.meta = checked.meta;
   return plan;
 }
 
@@ -256,7 +305,7 @@ export function createObject(type = 'furniture', kind) {
     window: { kind: 'fixed', width: 1200, depth: 180, height: 1400, color: '#a8c4c8', offset: 0, hinge: 'left', swing: 1, sill: 900 },
     furniture: { kind: kind || 'cabinet', width: 1200, depth: 500, height: 850, color: '#cdb696' },
   };
-  const object = { id: freshId(type), name: `新${KIND_LABELS[kind] || TYPES[type]}`, type, room: '未分区', x: 4900, y: 4500, rotation: 0, visible: true, locked: false, estimated: true, ...defaults[type] };
+  const object = { id: freshId(type), name: `新${KIND_LABELS[kind] || TYPES[type]}`, type, room: '未分区', x: 4900, y: 4500, rotation: 0, mirrorY: false, visible: true, locked: false, estimated: true, ...defaults[type] };
   if (kind) object.kind = kind;
   if (type === 'furniture') {
     const sizes = { bed: [1600, 2000, 550], sofa: [2100, 850, 780], chair: [450, 480, 800], 'dining-table': [850, 1700, 750], 'coffee-table': [1000, 550, 420], armchair: [700, 750, 800], plant: [350, 350, 900], rug: [2400, 1800, 15], wardrobe: [1600, 600, 2200], toilet: [420, 680, 780], washer: [600, 600, 850], sink: [650, 450, 160], shower: [900, 900, 80] };
@@ -268,25 +317,27 @@ export function createObject(type = 'furniture', kind) {
 /** Apply a published edit once to this reference plan, preserving unrelated edits. */
 export function applyPublishedPlanEdits(plan) {
   if (plan.meta?.source !== '极简公寓建筑平面图.png') return false;
-  const applied = Array.isArray(plan.meta.appliedEdits) ? plan.meta.appliedEdits : [];
+  const candidate = validatePlan(plan);
+  const applied = Array.isArray(candidate.meta.appliedEdits) ? candidate.meta.appliedEdits : [];
   const edits = [
     { key: BALCONY_EDIT, walls: ['wall-bedroom2-balcony'], doors: ['door-balcony-west'] },
     { key: LIVING_BALCONY_EDIT, walls: ['wall-living-balcony', 'wall-study-balcony'], doors: ['door-balcony-center', 'door-balcony-east'] },
   ];
   const pending = edits.filter(edit => !applied.includes(edit.key));
   const correctBathroomDoor = !applied.includes(BATH2_SLIDING_EDIT);
-  if (!pending.length && !correctBathroomDoor) return false;
+  const mirrorPlan = !applied.includes(HORIZONTAL_MIRROR_EDIT);
+  if (!pending.length && !correctBathroomDoor && !mirrorPlan) return false;
   for (const edit of pending) {
     const removedIds = new Set([...edit.walls, ...edit.doors]);
-    plan.objects = plan.objects.filter(o => !removedIds.has(o.id));
+    candidate.objects = candidate.objects.filter(o => !removedIds.has(o.id));
     // Extra user-added openings keep their world position as free objects.
-    for (const object of plan.objects) {
+    for (const object of candidate.objects) {
       if (edit.walls.includes(object.wallId)) delete object.wallId;
     }
   }
   if (correctBathroomDoor) {
-    const door = plan.objects.find(o => o.id === 'door-bath2');
-    const wall = plan.objects.find(o => o.id === 'wall-bath2-south' && o.type === 'wall');
+    const door = candidate.objects.find(o => o.id === 'door-bath2');
+    const wall = candidate.objects.find(o => o.id === 'wall-bath2-south' && o.type === 'wall');
     if (door) {
       door.kind = 'sliding';
       if (door.name === '卫生间二房门') door.name = '卫生间二推拉门';
@@ -297,7 +348,9 @@ export function applyPublishedPlanEdits(plan) {
       }
     }
   }
-  plan.meta.appliedEdits = [...applied, ...pending.map(edit => edit.key), ...(correctBathroomDoor ? [BATH2_SLIDING_EDIT] : [])];
+  if (mirrorPlan) mirrorPlanHorizontally(candidate);
+  candidate.meta.appliedEdits = [...applied, ...pending.map(edit => edit.key), ...(correctBathroomDoor ? [BATH2_SLIDING_EDIT] : []), ...(mirrorPlan ? [HORIZONTAL_MIRROR_EDIT] : [])];
+  Object.assign(plan, candidate);
   return true;
 }
 
@@ -420,7 +473,7 @@ export function createInitialPlan() {
   furniture('study-plant-north', '休闲区北侧绿植', 'plant', '休闲区', 9270, 6730, 250, 250, 850, 0, '#71856d');
   furniture('study-plant-south', '休闲区南侧绿植', 'plant', '休闲区', 9290, 8500, 250, 250, 850, 0, '#71856d');
 
-  return validatePlan({ version: 1, title: '极简公寓 · 可编辑户型', unit: 'mm', objects, rooms, meta: {
+  const plan = validatePlan({ version: 1, title: '极简公寓 · 可编辑户型', unit: 'mm', objects, rooms, meta: {
     source: '极简公寓建筑平面图.png',
     appliedEdits: [BALCONY_EDIT, LIVING_BALCONY_EDIT, BATH2_SLIDING_EDIT],
     description: '按用户提供的平面图人工重建。原图尺寸链用于布局比例，未标注的墙厚、家具及门窗尺寸为估算值。',
@@ -428,4 +481,6 @@ export function createInitialPlan() {
     bounds: { width: 9800, depth: 10300 },
     referenceImage: './assets/reference.png',
   } });
+  applyPublishedPlanEdits(plan);
+  return plan;
 }

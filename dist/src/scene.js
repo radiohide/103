@@ -212,6 +212,9 @@ export class PlanScene {
       const group = new THREE.Group();
       group.position.set(o.x * M, 0, o.y * M);
       group.rotation.y = -finite(o.rotation) * RAD;
+      // Rotation preserves the wall's start-to-end direction. Reflect local
+      // depth separately so door arcs, handles and asymmetric furniture flip.
+      group.scale.z = o.mirrorY ? -1 : 1;
       group.userData.id = o.id;
       if (o.type === 'wall') this.buildWall(group, o, objects);
       else if (o.type === 'door') this.buildDoor(group, o);
@@ -288,7 +291,10 @@ export class PlanScene {
     }
     const reference = new THREE.Mesh(new THREE.PlaneGeometry(14.276, 13.643), new THREE.MeshBasicMaterial({ map: this.referenceTexture, transparent: true, opacity: .38, depthWrite: false }));
     reference.rotation.x = -Math.PI / 2;
-    reference.position.set(4.762, .018, 5.133);
+    const transform = this.plan.meta?.referenceTransform;
+    const scaleX = transform?.scaleX === -1 ? -1 : 1;
+    reference.scale.x = scaleX;
+    reference.position.set((4762 * scaleX + finite(transform?.offsetX)) * M, .018, 5.133);
     reference.renderOrder = 1;
     this.world.add(reference);
   }
@@ -541,7 +547,10 @@ export class PlanScene {
     if (!o) return;
     const w = o.width * M, d = Math.max(o.depth * M, .05), cx = o.x * M, cz = o.y * M;
     const angle = finite(o.rotation) * RAD;
-    const local = (x, z, y = 2.9) => new THREE.Vector3(cx + Math.cos(angle) * x - Math.sin(angle) * z, y, cz + Math.sin(angle) * x + Math.cos(angle) * z);
+    const local = (x, z, y = 2.9) => {
+      z *= o.mirrorY ? -1 : 1;
+      return new THREE.Vector3(cx + Math.cos(angle) * x - Math.sin(angle) * z, y, cz + Math.sin(angle) * x + Math.cos(angle) * z);
+    };
     const actualTop = ((o.height || 800) + (o.type === 'window' ? finite(o.sill, 900) : 0)) * M;
     const level = this.view === '2d' ? 2.9 : (this.options.fullHeight || o.type === 'furniture' ? actualTop + .04 : Math.min(actualTop + .04, 1.4));
     const p = .055;

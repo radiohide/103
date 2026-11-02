@@ -8,3 +8,6 @@
 @media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
 .brand{white-space:nowrap;flex-shrink:0}
 @media(max-width:350px){.app-header{gap:7px;padding:0 8px}.header-actions .button{font-size:10px;padding:7px}.header-actions #help-btn{display:none}.view-switch button{font-size:10px;padding:7px 5px}.history-actions .icon-button{width:25px}.toolbar-divider{margin:0 2px}.view-options>div{gap:8px}.view-options label{font-size:9px}}
+
+.mirror-button{height:31px;padding:5px 9px;font-size:11px;background:#eef2e9;border-color:#dce4d5}
+@media(max-width:1120px){.workspace-toolbar{height:auto;min-height:91px;flex-wrap:wrap;justify-content:center;padding:8px 10px}.workspace-toolbar .history-actions{width:100%;justify-content:center}.mirror-button{padding:5px 8px}.history-actions .toolbar-divider{margin:0 3px}}

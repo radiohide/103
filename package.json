@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "start": "node server.mjs",
-    "test": "node --test model.test.mjs"
+    "test": "node --test model.test.mjs scene.test.mjs"
   },
-  "dependencies": { "three": "0.187.0" }
+  "dependencies": {
+    "three": "0.187.0"
+  }
 }

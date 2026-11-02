@@ -1,4 +1,4 @@
-import {createInitialPlan, createObject, updateObject, removeObject, duplicateObject, validatePlan, resolveOpenings, applyPublishedPlanEdits} from './model.js';
+import {createInitialPlan, createObject, updateObject, removeObject, duplicateObject, validatePlan, resolveOpenings, applyPublishedPlanEdits, mirrorPlanHorizontally} from './model.js';
 import {PlanScene} from './scene.js';
 
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
@@ -10,12 +10,12 @@ const STORAGE='jusuo.plan.v1';
 let plan=createInitialPlan(), selected=null, filter='all', search='', collapsed=new Set(), history=[], future=[], scene=null, view='2d', tool='move', linked=true, anchor='center', dragBefore=null, toastTimer, saveTimer, pendingConfirmation=null, dragFailed=false;
 try{const saved=localStorage.getItem(STORAGE);if(saved)plan=validatePlan(JSON.parse(saved));}catch{setTimeout(()=>toast('未能恢复浏览器中的方案，已载入原始户型。',true),400);}
 const beforePublishedEdit=JSON.parse(JSON.stringify(plan));
-if(applyPublishedPlanEdits(plan)){
+try{if(applyPublishedPlanEdits(plan)){
   // Undo restores the prior geometry while remembering the published edit.
   beforePublishedEdit.meta.appliedEdits=[...plan.meta.appliedEdits];
   history.push(JSON.stringify(beforePublishedEdit));
   setTimeout(()=>{persist();toast('已同步最新户型修改，可通过撤销恢复。');},0);
-}
+}}catch(error){setTimeout(()=>toast(`最新户型修改未能自动应用：${error.message}。已保留你的方案。`,true),400);}
 selected=plan.objects.find(o=>o.type==='furniture'&&o.kind==='sofa')?.id??plan.objects.find(o=>o.type==='furniture')?.id??null;
 const snapshot=()=>JSON.stringify(plan);
 const roomName=v=>plan.rooms?.find(r=>r.id===v)?.name||v||'未分组';
@@ -65,13 +65,14 @@ $('#project-title').addEventListener('change',e=>{const value=e.target.value.tri
 $('#object-search').oninput=e=>{search=e.target.value.toLowerCase().trim();renderTree();};
 $$('[data-filter]').forEach(b=>b.onclick=()=>{filter=b.dataset.filter;$$('[data-filter]').forEach(x=>{x.classList.toggle('active',x===b);x.setAttribute('aria-pressed',String(x===b));});renderTree();});
 $('#undo-btn').onclick=undo;$('#redo-btn').onclick=redo;$('#view-2d').onclick=()=>setView('2d');$('#view-3d').onclick=()=>setView('3d');$('#move-btn').onclick=()=>setTool('move');$('#rotate-btn').onclick=()=>setTool('rotate');
+$('#mirror-btn').onclick=()=>{mutate(()=>mirrorPlanHorizontally(plan),'已左右镜像，再点一次可翻回；Ctrl+Z 可撤销');scene?.fit();};
 $('#zoom-in').onclick=()=>scene?.zoom(1.2);$('#zoom-out').onclick=()=>scene?.zoom(1/1.2);$('#fit-btn').onclick=()=>scene?.fit();
 for(const option of ['snap','grid','labels','dimensions','reference','fullHeight']){$(`#option-${option}`).onchange=e=>scene?.setOptions({[option]:e.target.checked});}
 $('#export-btn').onclick=()=>$('#export-dialog').showModal();$('#help-btn').onclick=()=>$('#help-dialog').showModal();$('#download-json').onclick=downloadJSON;
 $('#download-png').onclick=()=>{try{const data=scene?.exportPNG();if(!data)throw Error('画布暂不可用。');download(data,fileName()+`-${view}.png`,'image/png');$('#export-dialog').close();toast('图片已导出');}catch(e){toast(e.message,true);}};
 $('#import-btn').onclick=()=>$('#import-file').click();
 $('#import-file').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{if(f.size>10*1024*1024)throw Error('方案文件不能大于 10 MB。');const next=validatePlan(JSON.parse(await f.text()));mutate(()=>{plan=next;selected=null;collapsed.clear();},'方案已导入');scene?.fit();}catch(error){toast(error.message||'无法读取方案，请选择有效 JSON 文件。',true);}e.target.value='';};
-$('#reset-btn').onclick=()=>confirmAction('恢复原始户型？','恢复根据原图重建的初始方案。当前修改可以通过撤销找回；也可以先导出一份备份。',()=>{mutate(()=>{plan=createInitialPlan();selected=null;},'已恢复原始户型');scene?.fit();});
+$('#reset-btn').onclick=()=>confirmAction('恢复默认户型？','恢复已左右镜像的默认方案，包含此前的阳台门墙删除及推拉门修正。当前修改可以通过撤销找回。',()=>{mutate(()=>{plan=createInitialPlan();selected=null;},'已恢复默认户型');scene?.fit();});
 $('#confirm-yes').onclick=()=>{const fn=pendingConfirmation;pendingConfirmation=null;$('#confirm-dialog').close();fn?.();};
 $$('[data-close]').forEach(b=>b.onclick=()=>b.closest('dialog').close());
 $$('dialog').forEach(d=>d.addEventListener('click',e=>{if(e.target!==d)return;const r=d.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)d.close();}));
