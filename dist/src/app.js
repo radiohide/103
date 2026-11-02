@@ -1,4 +1,4 @@
-import {createInitialPlan, createObject, updateObject, removeObject, duplicateObject, validatePlan, resolveOpenings} from './model.js';
+import {createInitialPlan, createObject, updateObject, removeObject, duplicateObject, validatePlan, resolveOpenings, applyPublishedPlanEdits} from './model.js';
 import {PlanScene} from './scene.js';
 
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
@@ -9,6 +9,13 @@ const KINDS={bed:'床',nightstand:'床头柜',wardrobe:'衣柜',sofa:'沙发','c
 const STORAGE='jusuo.plan.v1';
 let plan=createInitialPlan(), selected=null, filter='all', search='', collapsed=new Set(), history=[], future=[], scene=null, view='2d', tool='move', linked=true, anchor='center', dragBefore=null, toastTimer, saveTimer, pendingConfirmation=null, dragFailed=false;
 try{const saved=localStorage.getItem(STORAGE);if(saved)plan=validatePlan(JSON.parse(saved));}catch{setTimeout(()=>toast('未能恢复浏览器中的方案，已载入原始户型。',true),400);}
+const beforePublishedEdit=JSON.parse(JSON.stringify(plan));
+if(applyPublishedPlanEdits(plan)){
+  // Undo restores the prior geometry while remembering the published edit.
+  beforePublishedEdit.meta.appliedEdits=[...plan.meta.appliedEdits];
+  history.push(JSON.stringify(beforePublishedEdit));
+  setTimeout(()=>{persist();toast('已移除卧室阳台门墙和门，可通过撤销恢复。');},0);
+}
 selected=plan.objects.find(o=>o.type==='furniture'&&o.kind==='sofa')?.id??plan.objects.find(o=>o.type==='furniture')?.id??null;
 const snapshot=()=>JSON.stringify(plan);
 const roomName=v=>plan.rooms?.find(r=>r.id===v)?.name||v||'未分组';

@@ -4,6 +4,7 @@ export const KIND_LABELS = Object.freeze({ bed: '双人床', nightstand: '床头
 
 const clone = value => JSON.parse(JSON.stringify(value));
 const EPS = 5;
+const BALCONY_EDIT = 'remove-bedroom-balcony-partition-2026-11-02';
 const deg = value => ((value % 360) + 360) % 360;
 const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 const GEOMETRY_FIELDS = ['x', 'y', 'width', 'depth', 'height', 'rotation', 'wallId', 'offset', 'sill', 'hinge', 'swing'];
@@ -262,6 +263,20 @@ export function createObject(type = 'furniture', kind) {
   return object;
 }
 
+/** Apply a published edit once to this reference plan, preserving unrelated edits. */
+export function applyPublishedPlanEdits(plan) {
+  if (plan.meta?.source !== '极简公寓建筑平面图.png') return false;
+  const applied = Array.isArray(plan.meta.appliedEdits) ? plan.meta.appliedEdits : [];
+  if (applied.includes(BALCONY_EDIT)) return false;
+  plan.objects = plan.objects.filter(o => !['wall-bedroom2-balcony', 'door-balcony-west'].includes(o.id));
+  // Any extra openings added by the user retain their world position as free objects.
+  for (const object of plan.objects) {
+    if (object.wallId === 'wall-bedroom2-balcony') delete object.wallId;
+  }
+  plan.meta.appliedEdits = [...applied, BALCONY_EDIT];
+  return true;
+}
+
 export function createInitialPlan() {
   const objects = [];
   const rooms = [];
@@ -292,7 +307,6 @@ export function createInitialPlan() {
   wall('wall-north-balcony', '卧室一与北阳台隔墙', 0, 800, 3400, 800, 180, '卧室一');
   wall('wall-bedroom1-south', '卧室一南侧隔墙', 0, 3900, 3400, 3900, 180, '卧室一');
   wall('wall-bath2-south', '卫生间二南侧隔墙', 0, 5600, 3400, 5600, 180, '卫生间二');
-  wall('wall-bedroom2-balcony', '卧室二阳台门墙', 0, 8800, 3400, 8800, 180, '卧室二');
   wall('wall-living-balcony', '客厅阳台门墙', 3400, 8800, 7100, 8800, 180, '客厅');
   wall('wall-study-balcony', '休闲区阳台门墙', 7100, 8800, 9800, 8800, 180, '休闲区');
   wall('wall-balcony-east-divider', '南阳台东分隔墙', 7100, 8800, 7100, 10300, 220, '南阳台');
@@ -318,7 +332,6 @@ export function createInitialPlan() {
   opening('door-bath1', '卫生间一房门', 'door', 'wall-bath1-south', 580, 850, '卫生间一', { hinge: 'left', swing: -1 });
   opening('door-bath2', '卫生间二房门', 'door', 'wall-bath2-south', 2850, 900, '卫生间二', { hinge: 'right', swing: 1 });
   opening('door-bedroom2', '卧室二房门', 'door', 'wall-bedroom2-east', 600, 950, '卧室二', { hinge: 'left', swing: 1 });
-  opening('door-balcony-west', '卧室二阳台门', 'door', 'wall-bedroom2-balcony', 2450, 900, '卧室二', { hinge: 'right', swing: 1 });
   opening('door-balcony-center', '客厅阳台门', 'door', 'wall-living-balcony', 3000, 900, '客厅', { hinge: 'right', swing: 1 });
   opening('door-balcony-east', '休闲区阳台门', 'door', 'wall-study-balcony', 550, 900, '休闲区', { hinge: 'left', swing: 1 });
   opening('door-utility', '家政间房门', 'door', 'wall-utility-west', 1050, 800, '家政间', { hinge: 'right', swing: -1 });
@@ -389,6 +402,7 @@ export function createInitialPlan() {
 
   return validatePlan({ version: 1, title: '极简公寓 · 可编辑户型', unit: 'mm', objects, rooms, meta: {
     source: '极简公寓建筑平面图.png',
+    appliedEdits: [BALCONY_EDIT],
     description: '按用户提供的平面图人工重建。原图尺寸链用于布局比例，未标注的墙厚、家具及门窗尺寸为估算值。',
     sourceDimensions: { north: [3400, 3250, 1750], south: [3400, 3700, 2700], west: [800, 3100, 1700, 3200, 1500], east: [2600, 1950, 1400, 400, 2450, 1500] },
     bounds: { width: 9800, depth: 10300 },
