@@ -298,6 +298,41 @@ export function duplicateObject(plan, id) {
   return plan.objects.find(o => o.id === object.id);
 }
 
+/** A clipboard holds a detached snapshot, not a reference to the live furniture. */
+export function copyFurniture(plan, id) {
+  const source = plan.objects.find(object => object.id === id);
+  if (!source) throw new Error('找不到要复制的家具，请先选择家具');
+  if (source.type !== 'furniture') throw new Error('复制粘贴仅支持家具与设备');
+  return normalizeObject(source);
+}
+
+/** Paste an independent, editable instance without changing the clipboard. */
+export function pasteFurniture(plan, snapshot, { offset = 300 } = {}) {
+  if (!snapshot || snapshot.type !== 'furniture') throw new Error('请先复制一件家具，再粘贴');
+  if (typeof offset !== 'number' || !Number.isFinite(offset)) throw new Error('粘贴偏移必须是有限数字');
+  const source = normalizeObject(snapshot);
+  const candidate = validatePlan(plan);
+  const names = new Set(candidate.objects.map(object => object.name));
+  let name;
+  for (let index = 1; ; index++) {
+    const suffix = index === 1 ? ' 副本' : ` 副本 ${index}`;
+    let prefix = source.name.slice(0, 200 - suffix.length).trimEnd();
+    // Do not split a surrogate pair when a long name contains emoji.
+    if (/[\uD800-\uDBFF]$/.test(prefix)) prefix = prefix.slice(0, -1);
+    name = prefix + suffix;
+    if (!names.has(name)) break;
+  }
+  const ids = new Set(candidate.objects.map(object => object.id));
+  const baseId = freshId('furniture');
+  let id = baseId;
+  for (let index = 2; ids.has(id); index++) id = `${baseId}-${index}`;
+  const object = { ...source, id, name, x: source.x + offset, y: source.y + offset, locked: false, visible: true };
+  candidate.objects.push(object);
+  const checked = validatePlan(candidate);
+  plan.objects = checked.objects;
+  return plan.objects.find(value => value.id === id);
+}
+
 export function createObject(type = 'furniture', kind) {
   if (!Object.hasOwn(TYPES, type)) throw new Error('不支持的对象类型');
   const defaults = {

@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "node server.mjs",
-    "test": "node --test model.test.mjs scene.test.mjs measurement.test.mjs measurement-scene.test.mjs"
+    "test": "node --test model.test.mjs scene.test.mjs measurement.test.mjs measurement-scene.test.mjs furniture-clipboard.test.mjs"
   },
   "dependencies": {
     "three": "0.187.0"
