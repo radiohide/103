@@ -6,9 +6,10 @@ const clone = value => JSON.parse(JSON.stringify(value));
 const EPS = 5;
 const BALCONY_EDIT = 'remove-bedroom-balcony-partition-2026-11-02';
 const LIVING_BALCONY_EDIT = 'remove-living-study-balcony-partitions-2026-11-02';
+const BATH2_SLIDING_EDIT = 'correct-bathroom2-sliding-door-2026-11-02';
 const deg = value => ((value % 360) + 360) % 360;
 const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
-const GEOMETRY_FIELDS = ['x', 'y', 'width', 'depth', 'height', 'rotation', 'wallId', 'offset', 'sill', 'hinge', 'swing'];
+const GEOMETRY_FIELDS = ['x', 'y', 'width', 'depth', 'height', 'rotation', 'wallId', 'offset', 'sill', 'hinge', 'swing', 'kind'];
 const equivalent = (field, a, b) => {
   if (field === 'wallId') return (a || null) === (b || null);
   if (typeof a === 'number' && typeof b === 'number' && Number.isFinite(a) && Number.isFinite(b)) {
@@ -273,7 +274,8 @@ export function applyPublishedPlanEdits(plan) {
     { key: LIVING_BALCONY_EDIT, walls: ['wall-living-balcony', 'wall-study-balcony'], doors: ['door-balcony-center', 'door-balcony-east'] },
   ];
   const pending = edits.filter(edit => !applied.includes(edit.key));
-  if (!pending.length) return false;
+  const correctBathroomDoor = !applied.includes(BATH2_SLIDING_EDIT);
+  if (!pending.length && !correctBathroomDoor) return false;
   for (const edit of pending) {
     const removedIds = new Set([...edit.walls, ...edit.doors]);
     plan.objects = plan.objects.filter(o => !removedIds.has(o.id));
@@ -282,7 +284,20 @@ export function applyPublishedPlanEdits(plan) {
       if (edit.walls.includes(object.wallId)) delete object.wallId;
     }
   }
-  plan.meta.appliedEdits = [...applied, ...pending.map(edit => edit.key)];
+  if (correctBathroomDoor) {
+    const door = plan.objects.find(o => o.id === 'door-bath2');
+    const wall = plan.objects.find(o => o.id === 'wall-bath2-south' && o.type === 'wall');
+    if (door) {
+      door.kind = 'sliding';
+      if (door.name === '卫生间二房门') door.name = '卫生间二推拉门';
+      if (wall) {
+        door.wallId = wall.id;
+        door.offset = wall.width * 1850 / 3400;
+        Object.assign(door, attachedGeometry(door, wall));
+      }
+    }
+  }
+  plan.meta.appliedEdits = [...applied, ...pending.map(edit => edit.key), ...(correctBathroomDoor ? [BATH2_SLIDING_EDIT] : [])];
   return true;
 }
 
@@ -337,7 +352,7 @@ export function createInitialPlan() {
   opening('door-bedroom1', '卧室一房门', 'door', 'wall-bedroom1-door', 650, 900, '卧室一', { hinge: 'right', swing: 1 });
   opening('door-kitchen', '厨房敞口', 'door', 'wall-kitchen-south', 1750, 2200, '厨房', { kind: 'opening', height: 2400 });
   opening('door-bath1', '卫生间一房门', 'door', 'wall-bath1-south', 580, 850, '卫生间一', { hinge: 'left', swing: -1 });
-  opening('door-bath2', '卫生间二房门', 'door', 'wall-bath2-south', 2850, 900, '卫生间二', { hinge: 'right', swing: 1 });
+  opening('door-bath2', '卫生间二推拉门', 'door', 'wall-bath2-south', 1850, 900, '卫生间二', { kind: 'sliding' });
   opening('door-bedroom2', '卧室二房门', 'door', 'wall-bedroom2-east', 600, 950, '卧室二', { hinge: 'left', swing: 1 });
   opening('door-utility', '家政间房门', 'door', 'wall-utility-west', 1050, 800, '家政间', { hinge: 'right', swing: -1 });
   opening('door-study', '休闲区房门', 'door', 'wall-study-west', 600, 900, '休闲区', { hinge: 'left', swing: -1 });
@@ -407,7 +422,7 @@ export function createInitialPlan() {
 
   return validatePlan({ version: 1, title: '极简公寓 · 可编辑户型', unit: 'mm', objects, rooms, meta: {
     source: '极简公寓建筑平面图.png',
-    appliedEdits: [BALCONY_EDIT, LIVING_BALCONY_EDIT],
+    appliedEdits: [BALCONY_EDIT, LIVING_BALCONY_EDIT, BATH2_SLIDING_EDIT],
     description: '按用户提供的平面图人工重建。原图尺寸链用于布局比例，未标注的墙厚、家具及门窗尺寸为估算值。',
     sourceDimensions: { north: [3400, 3250, 1750], south: [3400, 3700, 2700], west: [800, 3100, 1700, 3200, 1500], east: [2600, 1950, 1400, 400, 2450, 1500] },
     bounds: { width: 9800, depth: 10300 },
