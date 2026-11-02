@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "node server.mjs",
+    "build": "node tools/build-single.mjs",
+    "start": "node tools/build-single.mjs && node server.mjs",
     "test": "node --test model.test.mjs scene.test.mjs measurement.test.mjs measurement-scene.test.mjs furniture-clipboard.test.mjs"
   },
   "dependencies": {

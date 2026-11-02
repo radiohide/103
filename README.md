@@ -7,11 +7,20 @@
 需要 Node.js，运行：
 
 ```powershell
-cd C:\Dev\103\floorplan-studio
 npm start
 ```
 
-浏览器访问 http://127.0.0.1:4317 。静态资源已经全部放在 `dist/`，无需联网加载 Three.js。也可使用任意静态 HTTP 服务托管该文件夹。请通过 HTTP 服务打开，避免直接双击 HTML 的模块加载限制。
+`npm start` 先构建单文件产物，再在 http://127.0.0.1:4317 提供服务。端口可用环境变量 `PORT` 覆盖。Three.js 已内联，无需联网加载。
+
+## 默认产物：单文件 HTML
+
+```powershell
+npm run build
+```
+
+生成 `dist-single/index.html`：整站（HTML、CSS、全部脚本、Three.js 与参考底图）都在一个文件里。可直接双击打开——`file://` 下模块脚本与底图均已内联，localStorage 自动保存和 JSON/PNG 导出都能用；也可丢到任意静态托管，`.openai/hosting.json` 即指向 `dist-single`。
+
+改代码请编辑 `dist/` 下的多文件源码（`dist/index.html`、`dist/style.css`、`dist/src/*.js`、`dist/vendor/`、`dist/assets/`），改完重新 `npm run build`。`dist/` 保留为可读、可调试的源版本，不作为线上产物。
 
 ## 操作
 
@@ -51,5 +60,7 @@ npm test
 - `dist/src/measurement.js`：毫米测距、图形轮廓及几何吸附。
 - `dist/vendor/`：Three.js 0.187.0，MIT 许可证随文件提供。
 - `dist/assets/reference.png`：用户提供的参考底图。
+- `tools/build-single.mjs`：单文件打包器（ES 模块转 IIFE、CSS 内联、底图转 data URL），产物 `dist-single/index.html`。
+- `server.mjs`：托管 `dist-single/` 的静态服务器。
 
-开发时安装依赖使用 `npm install`；部署静态目录时不需要 node_modules。
+开发时安装依赖使用 `npm install`；部署只需 `dist-single/index.html` 这一个文件，不需要 node_modules 和 `dist/`。
