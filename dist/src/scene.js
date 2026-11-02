@@ -106,7 +106,10 @@ export class PlanScene {
     window.addEventListener('pointerup', this._up);
     window.addEventListener('pointercancel', this._up);
     this.renderer.domElement.addEventListener('contextmenu', this._context);
-    this.resizeObserver = new ResizeObserver(() => this.resize());
+    this.resizeObserver = new ResizeObserver(() => {
+      this.resize();
+      if (this.plan) this.fit();
+    });
     this.resizeObserver.observe(container);
     this.resize();
     this.frame = null;
@@ -585,8 +588,13 @@ export class PlanScene {
         y -= overflow;
         x = Math.max(110, Math.min(this.width - 110, x));
       }
+      const outside = p.z < -1 || p.z > 1 || x < 0 || x > this.width || y < 12 || y > this.height - 12;
+      l.el.style.display = outside ? 'none' : '';
+      if (!outside) {
+        const margin = Math.min(this.width / 2, l.el.offsetWidth / 2 + 7);
+        x = Math.max(margin, Math.min(this.width - margin, x));
+      }
       l.el.style.left = `${x}px`; l.el.style.top = `${y}px`;
-      l.el.style.display = p.z < -1 || p.z > 1 || x < 15 || x > this.width - 15 || y < 12 || y > this.height - 12 ? 'none' : '';
     }
     if (this.rotateHandle) {
       const p = this.rotatePoint.clone().project(this.camera);
