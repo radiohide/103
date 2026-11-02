@@ -8,6 +8,7 @@ const BALCONY_EDIT = 'remove-bedroom-balcony-partition-2026-11-02';
 const LIVING_BALCONY_EDIT = 'remove-living-study-balcony-partitions-2026-11-02';
 const BATH2_SLIDING_EDIT = 'correct-bathroom2-sliding-door-2026-11-02';
 const HORIZONTAL_MIRROR_EDIT = 'mirror-plan-horizontal-2026-11-02';
+const NORTH_BALCONY_EDIT = 'remove-bedroom1-north-balcony-partition-2026-11-02';
 const deg = value => ((value % 360) + 360) % 360;
 const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 const GEOMETRY_FIELDS = ['x', 'y', 'width', 'depth', 'height', 'rotation', 'mirrorY', 'wallId', 'offset', 'sill', 'hinge', 'swing', 'kind'];
@@ -322,6 +323,7 @@ export function applyPublishedPlanEdits(plan) {
   const edits = [
     { key: BALCONY_EDIT, walls: ['wall-bedroom2-balcony'], doors: ['door-balcony-west'] },
     { key: LIVING_BALCONY_EDIT, walls: ['wall-living-balcony', 'wall-study-balcony'], doors: ['door-balcony-center', 'door-balcony-east'] },
+    { key: NORTH_BALCONY_EDIT, walls: ['wall-north-balcony'], doors: ['window-bedroom1'], removeAttached: true },
   ];
   const pending = edits.filter(edit => !applied.includes(edit.key));
   const correctBathroomDoor = !applied.includes(BATH2_SLIDING_EDIT);
@@ -329,8 +331,8 @@ export function applyPublishedPlanEdits(plan) {
   if (!pending.length && !correctBathroomDoor && !mirrorPlan) return false;
   for (const edit of pending) {
     const removedIds = new Set([...edit.walls, ...edit.doors]);
-    candidate.objects = candidate.objects.filter(o => !removedIds.has(o.id));
-    // Extra user-added openings keep their world position as free objects.
+    candidate.objects = candidate.objects.filter(o => !removedIds.has(o.id) && !(edit.removeAttached && ['door', 'window'].includes(o.type) && edit.walls.includes(o.wallId)));
+    // Earlier edits preserve extra openings; the north partition is fully cleared.
     for (const object of candidate.objects) {
       if (edit.walls.includes(object.wallId)) delete object.wallId;
     }
@@ -381,7 +383,6 @@ export function createInitialPlan() {
   wall('wall-bath2-east', '卫生间二东侧隔墙', 3400, 3900, 3400, 5600, 180, '卫生间二');
   wall('wall-bedroom2-east', '卧室二东侧隔墙', 3400, 5600, 3400, 8800, 220, '卧室二');
   wall('wall-balcony-west-divider', '南阳台西分隔墙', 3400, 8800, 3400, 10300, 220, '南阳台');
-  wall('wall-north-balcony', '卧室一与北阳台隔墙', 0, 800, 3400, 800, 180, '卧室一');
   wall('wall-bedroom1-south', '卧室一南侧隔墙', 0, 3900, 3400, 3900, 180, '卧室一');
   wall('wall-bath2-south', '卫生间二南侧隔墙', 0, 5600, 3400, 5600, 180, '卫生间二');
   wall('wall-balcony-east-divider', '南阳台东分隔墙', 7100, 8800, 7100, 10300, 220, '南阳台');
@@ -396,7 +397,6 @@ export function createInitialPlan() {
   opening('window-north-balcony', '北阳台外窗', 'window', 'wall-north', 1650, 2800, '北阳台', { sill: 650, height: 1900 });
   opening('window-kitchen', '厨房采光窗', 'window', 'wall-north', 5050, 1550, '厨房', { sill: 1050, height: 1300 });
   opening('window-bath1', '卫生间一外窗', 'window', 'wall-north', 7350, 700, '卫生间一', { sill: 1300, height: 1000 });
-  opening('window-bedroom1', '卧室一内窗', 'window', 'wall-north-balcony', 1700, 2100, '卧室一', { sill: 850, height: 1550 });
   opening('window-bath2', '卫生间二外窗', 'window', 'wall-west', 4700, 850, '卫生间二', { sill: 1200, height: 1100 });
   opening('window-south-west', '南阳台西窗', 'window', 'wall-south', 1650, 2700, '南阳台', { sill: 750, height: 1800 });
   opening('window-south-center', '南阳台中窗', 'window', 'wall-south', 5250, 2800, '南阳台', { sill: 750, height: 1800 });
@@ -475,7 +475,7 @@ export function createInitialPlan() {
 
   const plan = validatePlan({ version: 1, title: '极简公寓 · 可编辑户型', unit: 'mm', objects, rooms, meta: {
     source: '极简公寓建筑平面图.png',
-    appliedEdits: [BALCONY_EDIT, LIVING_BALCONY_EDIT, BATH2_SLIDING_EDIT],
+    appliedEdits: [BALCONY_EDIT, LIVING_BALCONY_EDIT, BATH2_SLIDING_EDIT, NORTH_BALCONY_EDIT],
     description: '按用户提供的平面图人工重建。原图尺寸链用于布局比例，未标注的墙厚、家具及门窗尺寸为估算值。',
     sourceDimensions: { north: [3400, 3250, 1750], south: [3400, 3700, 2700], west: [800, 3100, 1700, 3200, 1500], east: [2600, 1950, 1400, 400, 2450, 1500] },
     bounds: { width: 9800, depth: 10300 },

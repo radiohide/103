@@ -10,7 +10,7 @@ function sourceOrientationPlan() {
 
 test('the seed preserves annotated bounds and gives all objects unique editable names', () => {
   const plan = sourceOrientationPlan();
-  assert.equal(plan.objects.length, 87);
+  assert.equal(plan.objects.length, 85);
   assert.equal(new Set(plan.objects.map(o => o.id)).size, plan.objects.length);
   assert.ok(plan.objects.every(o => o.name && Number.isFinite(o.width)));
   assert.equal(plan.objects.filter(o => o.kind === 'chair').length, 6);
@@ -280,4 +280,29 @@ test('mirror validates atomically and local reflection remains geometry when loc
   assert.equal(JSON.stringify(plan), saved);
   plan.meta.referenceTransform = { scaleX: 0, offsetX: 0 };
   assert.throws(() => validatePlan(plan), /底图镜像/);
+});
+
+
+test('north balcony partition removal migrates once without changing the mirrored layout or other edits', () => {
+  const marker = 'remove-bedroom1-north-balcony-partition-2026-11-02';
+  const plan = createInitialPlan();
+  assert.ok(!plan.objects.some(o => ['wall-north-balcony', 'window-bedroom1'].includes(o.id)));
+  plan.meta.appliedEdits = plan.meta.appliedEdits.filter(key => key !== marker);
+  plan.objects.push({ ...createObject('wall'), id: 'wall-north-balcony', name: '卧室一与北阳台隔墙', x: 8100, y: 800, width: 3400, depth: 180, rotation: 180, mirrorY: true });
+  plan.objects.push({ ...createObject('window'), id: 'window-bedroom1', name: '卧室一内窗', wallId: 'wall-north-balcony', offset: 1700, width: 2100, mirrorY: true });
+  plan.objects.push({ ...createObject('door'), id: 'custom-north-balcony-door', name: '新增阳台门', wallId: 'wall-north-balcony', offset: 310, width: 400, mirrorY: true });
+  updateObject(plan, 'bedroom1-bed', { name: '我的卧室床', width: 1680 });
+  const expected = plan.objects.filter(o => !['wall-north-balcony', 'window-bedroom1', 'custom-north-balcony-door'].includes(o.id));
+  const rooms = structuredClone(plan.rooms), reference = structuredClone(plan.meta.referenceTransform);
+  assert.equal(applyPublishedPlanEdits(plan), true);
+  assert.deepEqual(plan.objects, expected);
+  assert.ok(byId(plan, 'window-north-balcony'), 'exterior glazing remains');
+  assert.ok(byId(plan, 'door-bedroom1'), 'corridor bedroom door remains');
+  assert.deepEqual(plan.rooms, rooms);
+  assert.deepEqual(plan.meta.referenceTransform, reference);
+  assert.ok(!plan.objects.some(o => o.wallId === 'wall-north-balcony'));
+  const saved = JSON.stringify(plan);
+  assert.equal(applyPublishedPlanEdits(plan), false);
+  assert.equal(JSON.stringify(plan), saved);
+  assert.deepEqual(validatePlan(plan), plan);
 });
