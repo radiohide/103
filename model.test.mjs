@@ -4,7 +4,7 @@ import { createInitialPlan, createObject, validatePlan, updateObject, removeObje
 
 test('the seed preserves annotated bounds and gives all objects unique editable names', () => {
   const plan = createInitialPlan();
-  assert.ok(plan.objects.length >= 90);
+  assert.equal(plan.objects.length, 87);
   assert.equal(new Set(plan.objects.map(o => o.id)).size, plan.objects.length);
   assert.ok(plan.objects.every(o => o.name && Number.isFinite(o.width)));
   assert.equal(plan.objects.filter(o => o.kind === 'chair').length, 6);

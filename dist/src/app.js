@@ -14,7 +14,7 @@ if(applyPublishedPlanEdits(plan)){
   // Undo restores the prior geometry while remembering the published edit.
   beforePublishedEdit.meta.appliedEdits=[...plan.meta.appliedEdits];
   history.push(JSON.stringify(beforePublishedEdit));
-  setTimeout(()=>{persist();toast('已移除卧室阳台门墙和门，可通过撤销恢复。');},0);
+  setTimeout(()=>{persist();toast('已同步阳台门墙与门的删除修改，可通过撤销恢复。');},0);
 }
 selected=plan.objects.find(o=>o.type==='furniture'&&o.kind==='sofa')?.id??plan.objects.find(o=>o.type==='furniture')?.id??null;
 const snapshot=()=>JSON.stringify(plan);
