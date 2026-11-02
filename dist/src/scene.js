@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { buildMeasurementTargets, snapMeasurementPoint, measurementMetrics } from './measurement.js';
 
 const M = 0.001;
 const RAD = Math.PI / 180;
@@ -23,6 +24,9 @@ export class PlanScene {
     this.items = new Map();
     this.labels = [];
     this.drag = null;
+    this.measurement = { start: null, end: null, complete: false, snapLabel: '' };
+    this.measurePointers = new Set();
+    this.measureTargets = { points: [], segments: [] };
     this.pointer = new THREE.Vector2();
     this.raycaster = new THREE.Raycaster();
     this.ground = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
@@ -58,6 +62,8 @@ export class PlanScene {
       .plan-scene-room{font-size:12px;font-weight:550;letter-spacing:.1em;color:#758172;text-shadow:0 1px 2px #fff}
       .plan-scene-measure{font-size:10px;font-weight:550;color:#6a746c;background:rgba(241,242,237,.9);padding:1px 5px;border-radius:3px;font-variant-numeric:tabular-nums;letter-spacing:.02em}
       .plan-scene-selected{font-size:11px;color:#fff;background:#147d68;padding:4px 9px;border-radius:5px;box-shadow:0 2px 8px #143b2620;max-width:230px;overflow:hidden;text-overflow:ellipsis;letter-spacing:0}
+      .plan-scene-ruler{font-size:11px;font-weight:650;color:#fff;background:#147d68;padding:4px 9px;border-radius:5px;box-shadow:0 2px 8px #143b2620;font-variant-numeric:tabular-nums;letter-spacing:0}
+      .plan-scene-ruler-point{font-size:10px;font-weight:650;color:#147d68;background:#fffefa;padding:1px 4px;border-radius:3px;letter-spacing:0}
       .plan-scene-rotate{position:absolute;width:30px;height:30px;border:1.5px solid #147d68;border-radius:50%;background:#fff;color:#147d68;font-size:19px;display:grid;place-items:center;transform:translate(-50%,-50%);pointer-events:auto;cursor:grab;box-shadow:0 2px 8px #163e2420;padding:0;touch-action:none}
       .plan-scene-rotate:active{cursor:grabbing}.plan-scene-rotate:focus-visible{outline:3px solid #90c9b8;outline-offset:2px}
     `;
@@ -92,6 +98,8 @@ export class PlanScene {
     this.scene.add(this.world);
     this.selectionGroup = new THREE.Group();
     this.scene.add(this.selectionGroup);
+    this.measurementGroup = new THREE.Group();
+    this.scene.add(this.measurementGroup);
     this.grid = new THREE.GridHelper(60, 120, '#ccd4cb', '#dfe4dc');
     this.grid.position.set(5, -0.09, 5);
     this.grid.material.transparent = true;
@@ -116,6 +124,8 @@ export class PlanScene {
     this.animate = () => {
       if (this.disposed) return;
       this.controls.update();
+      const measureScale = this.millimetresPerPixel();
+      if (this.tool === 'measure' && this.measureScale !== measureScale) this.drawMeasurement();
       this.renderer.render(this.scene, this.camera);
       this.placeLabels();
       this.frame = requestAnimationFrame(this.animate);
@@ -201,6 +211,7 @@ export class PlanScene {
 
   setPlan(plan) {
     this.plan = plan;
+    this.measureTargets = buildMeasurementTargets(plan);
     this.disposeGroup(this.world);
     this.items.clear();
     this.labels.filter(l => l.kind !== 'selection').forEach(l => l.el.remove());
@@ -225,6 +236,7 @@ export class PlanScene {
     }
     this.drawDimensions();
     this.drawSelection();
+    this.drawMeasurement();
   }
 
   buildFloor() {
@@ -543,6 +555,7 @@ export class PlanScene {
     this.labels.filter(l => l.kind === 'selection').forEach(l => l.el.remove());
     this.labels = this.labels.filter(l => l.kind !== 'selection');
     this.rotateHandle?.remove(); this.rotateHandle = null;
+    if (this.tool === 'measure') return;
     const o = this.plan?.objects.find(x => x.id === this.selected && x.visible !== false);
     if (!o) return;
     const w = o.width * M, d = Math.max(o.depth * M, .05), cx = o.x * M, cz = o.y * M;
@@ -586,6 +599,7 @@ export class PlanScene {
     for (const l of this.labels) {
       const p = l.point.clone().project(this.camera);
       let x = (p.x * .5 + .5) * this.width, y = (-p.y * .5 + .5) * this.height;
+      x += l.pixelOffsetX || 0; y += l.pixelOffsetY || 0;
       if (l.screenCorners) {
         const projected = l.screenCorners.map(v => v.clone().project(this.camera));
         const xs = projected.map(v => (v.x * .5 + .5) * this.width);
@@ -639,7 +653,113 @@ export class PlanScene {
     return hits.find(h => h.object.isMesh && h.object.userData.id)?.object.userData.id || null;
   }
 
+  millimetresPerPixel() {
+    return this.topCamera && this.height ? (this.topCamera.top - this.topCamera.bottom) / this.topCamera.zoom / this.height / M : 1;
+  }
+
+  measurementPoint(e) {
+    const rect = this.renderer.domElement.getBoundingClientRect();
+    if (e.clientX < rect.left || e.clientX > rect.right || e.clientY < rect.top || e.clientY > rect.bottom) return null;
+    const point = this.groundPoint(e);
+    if (!point) return null;
+    return snapMeasurementPoint({ x: point.x / M, y: point.z / M }, this.measureTargets, this.millimetresPerPixel() * 11, {
+      enabled: this.options.snap && !e.altKey,
+      origin: this.measurement?.complete ? null : this.measurement?.start,
+      axisLock: e.shiftKey === true,
+    });
+  }
+
+  notifyMeasurement() {
+    const state = this.measurement;
+    this.callbacks.onMeasurementChange?.({ ...state, start: state.start ? { ...state.start } : null, end: state.end ? { ...state.end } : null });
+  }
+
+  clearMeasurement() {
+    this.measurement = { start: null, end: null, complete: false, snapLabel: '' };
+    this.measureDown = null; this.measureHover = null;
+    this.measurePointers?.clear();
+    this.drawMeasurement();
+    this.notifyMeasurement();
+  }
+
+  drawMeasurement() {
+    if (!this.measurementGroup) return;
+    this.disposeGroup(this.measurementGroup);
+    this.labels.filter(l => l.kind === 'measurement').forEach(l => l.el.remove());
+    this.labels = this.labels.filter(l => l.kind !== 'measurement');
+    this.measureScale = this.millimetresPerPixel();
+    if (this.tool !== 'measure' || this.view !== '2d') return;
+    const { start, end } = this.measurement;
+    const level = 3.1, radius = this.measureScale * M * 4;
+    const coord = p => [p.x * M, level, p.y * M];
+    const marker = (p, name) => {
+      const circle = new THREE.Mesh(new THREE.CircleGeometry(radius, 24), new THREE.MeshBasicMaterial({ color: ACCENT, depthTest: false, depthWrite: false }));
+      circle.rotation.x = -Math.PI / 2;
+      circle.position.set(...coord(p));
+      this.measurementGroup.add(circle);
+      if (name) {
+        const label = this.addLabel(name, new THREE.Vector3(...coord(p)), 'ruler-point');
+        label.kind = 'measurement'; label.pixelOffsetY = -14;
+      }
+    };
+    if (start) marker(start, 'A');
+    if (start && end) {
+      const { distance, dx, dy } = measurementMetrics(start, end);
+      if (dx > 1 && dy > 1) this.line(this.measurementGroup, [coord(start), coord({ x: end.x, y: start.y }), coord(end)], ACCENT, .45, true);
+      this.line(this.measurementGroup, [coord(start), coord(end)], ACCENT, 1);
+      marker(end, 'B');
+      const midpoint = new THREE.Vector3((start.x + end.x) * M / 2, level, (start.y + end.y) * M / 2);
+      const label = this.addLabel(`${Math.round(distance).toLocaleString('zh-CN')} mm`, midpoint, 'ruler');
+      label.kind = 'measurement'; label.pixelOffsetY = 19;
+    } else if (this.measureHover) marker(this.measureHover);
+    // A drafting overlay must remain visible above walls and furniture.
+    this.measurementGroup.traverse(node => {
+      node.renderOrder = 1000;
+      if (node.material) { node.material.depthTest = false; node.material.depthWrite = false; }
+    });
+  }
+
+  measurementPointerDown(e) {
+    this.measurePointers ??= new Set();
+    this.measurePointers.add(e.pointerId);
+    if (e.button !== 0 || this.measurePointers.size > 1) {
+      if (this.measureDown) this.measureDown.cancelled = true;
+      return;
+    }
+    this.measureDown = { pointerId: e.pointerId, x: e.clientX, y: e.clientY, cancelled: false };
+  }
+
+  measurementPointerMove(e) {
+    const down = this.measureDown;
+    if (down && (Math.hypot(e.clientX - down.x, e.clientY - down.y) > 5 || this.measurePointers?.size > 1)) down.cancelled = true;
+    if ((e.buttons && (!down || down.cancelled)) || this.measurePointers?.size > 1 || this.measurement.complete) return;
+    const point = this.measurementPoint(e);
+    if (!point) return;
+    this.measureHover = { x: point.x, y: point.y };
+    if (this.measurement.start) this.measurement.end = { ...this.measureHover };
+    this.measurement.snapLabel = point.snapLabel;
+    this.drawMeasurement();
+    this.notifyMeasurement();
+  }
+
+  measurementPointerUp(e) {
+    const down = this.measureDown;
+    this.measurePointers?.delete(e.pointerId);
+    if (!down || down.pointerId !== e.pointerId) return;
+    this.measureDown = null;
+    if (e.type === 'pointercancel' || e.button !== 0 || down.cancelled || this.measurePointers?.size || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 5) return;
+    const point = this.measurementPoint(e);
+    if (!point) return;
+    const p = { x: point.x, y: point.y };
+    if (!this.measurement.start || this.measurement.complete) this.measurement = { start: p, end: null, complete: false, snapLabel: point.snapLabel };
+    else this.measurement = { ...this.measurement, end: p, complete: true, snapLabel: point.snapLabel };
+    this.measureHover = null;
+    this.drawMeasurement();
+    this.notifyMeasurement();
+  }
+
   pointerDown(e) {
+    if (this.tool === 'measure' && this.view === '2d') { this.measurementPointerDown(e); return; }
     if (e.button !== 0) return;
     const id = this.hit(e);
     this.downClient = { x: e.clientX, y: e.clientY, id };
@@ -665,6 +785,7 @@ export class PlanScene {
   }
 
   pointerMove(e) {
+    if (this.tool === 'measure' && this.view === '2d') { this.measurementPointerMove(e); return; }
     const d = this.drag;
     if (!d || d.pointerId !== e.pointerId) return;
     const p = this.groundPoint(e);
@@ -689,6 +810,7 @@ export class PlanScene {
   }
 
   pointerUp(e) {
+    if (this.tool === 'measure' && this.view === '2d') { this.measurementPointerUp(e); return; }
     if (this.view === '3d' && this.downClient && Math.hypot(e.clientX - this.downClient.x, e.clientY - this.downClient.y) < 4) {
       this.callbacks.onSelect?.(this.downClient.id); this.select(this.downClient.id);
     }
@@ -704,6 +826,7 @@ export class PlanScene {
 
   setView(view) {
     if (!['2d', '3d'].includes(view) || view === this.view) return;
+    if (view === '3d' && this.tool === 'measure') this.setTool('move');
     this.drag = null;
     this.view = view;
     this.camera = view === '2d' ? this.topCamera : this.perspectiveCamera;
@@ -731,7 +854,18 @@ export class PlanScene {
     this.fit();
   }
 
-  setTool(tool) { this.tool = tool === 'rotate' ? 'rotate' : 'move'; }
+  setTool(tool) {
+    const next = ['move', 'rotate', 'measure'].includes(tool) ? tool : 'move';
+    if (next === this.tool) return;
+    this.drag = null; this.downClient = null;
+    this.controls.enabled = true;
+    if (this.tool === 'measure') this.clearMeasurement();
+    this.tool = next;
+    this.renderer.domElement.style.cursor = next === 'measure' ? 'crosshair' : '';
+    this.drawSelection();
+    this.drawMeasurement();
+    if (next === 'measure') this.notifyMeasurement();
+  }
 
   setOptions(options) {
     const previous = { ...this.options };
@@ -771,6 +905,7 @@ export class PlanScene {
   }
 
   exportPNG() {
+    this.placeLabels();
     this.renderer.render(this.scene, this.camera);
     // Compose DOM annotation positions into the downloadable image so labels
     // remain part of the deliverable rather than disappearing from screenshots.
@@ -782,7 +917,7 @@ export class PlanScene {
     for (const l of this.labels) {
       if (l.el.style.display === 'none') continue;
       const x = parseFloat(l.el.style.left), y = parseFloat(l.el.style.top);
-      const selected = l.el.classList.contains('plan-scene-selected');
+      const selected = l.el.classList.contains('plan-scene-selected') || l.el.classList.contains('plan-scene-ruler');
       ctx.font = `${selected ? 550 : 500} ${l.kind === 'room' ? 12 : 11}px "Microsoft YaHei", sans-serif`;
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       if (selected) {
@@ -802,6 +937,7 @@ export class PlanScene {
     window.removeEventListener('pointermove', this._move); window.removeEventListener('pointerup', this._up); window.removeEventListener('pointercancel', this._up);
     this.renderer.domElement.removeEventListener('contextmenu', this._context);
     this.disposeGroup(this.world); this.disposeGroup(this.selectionGroup);
+    this.disposeGroup(this.measurementGroup);
     this.grid.geometry.dispose(); this.grid.material.dispose(); this.referenceTexture?.dispose();
     this.renderer.dispose(); this.renderer.domElement.remove(); this.overlay.remove(); this.style.remove();
   }

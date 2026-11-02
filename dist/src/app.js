@@ -1,5 +1,6 @@
 import {createInitialPlan, createObject, updateObject, removeObject, duplicateObject, validatePlan, resolveOpenings, applyPublishedPlanEdits, mirrorPlanHorizontally} from './model.js';
 import {PlanScene} from './scene.js';
+import {measurementMetrics} from './measurement.js';
 
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -7,6 +8,7 @@ const icon=n=>`<svg class="icon" aria-hidden="true"><use href="#i-${n}"/></svg>`
 const TYPES={wall:'墙体',door:'门',window:'窗',furniture:'家具与设备'};
 const KINDS={bed:'床',nightstand:'床头柜',wardrobe:'衣柜',sofa:'沙发','coffee-table':'茶几','dining-table':'餐桌',chair:'餐椅',armchair:'休闲椅',cabinet:'储物柜',counter:'橱柜',sink:'洗手盆',toilet:'坐便器',shower:'淋浴',stove:'灶台',fridge:'冰箱',washer:'洗衣机',rug:'地毯',plant:'绿植',lamp:'台灯','side-table':'边几',bench:'长凳',vanity:'浴室柜',basin:'台盆'};
 const STORAGE='jusuo.plan.v1';
+let measurement={start:null,end:null,complete:false,snapLabel:''};
 let plan=createInitialPlan(), selected=null, filter='all', search='', collapsed=new Set(), history=[], future=[], scene=null, view='2d', tool='move', linked=true, anchor='center', dragBefore=null, toastTimer, saveTimer, pendingConfirmation=null, dragFailed=false;
 try{const saved=localStorage.getItem(STORAGE);if(saved)plan=validatePlan(JSON.parse(saved));}catch{setTimeout(()=>toast('未能恢复浏览器中的方案，已载入原始户型。',true),400);}
 const beforePublishedEdit=JSON.parse(JSON.stringify(plan));
@@ -25,13 +27,13 @@ const selectedObject=()=>plan.objects.find(o=>o.id===selected);
 function toast(message,error=false){clearTimeout(toastTimer);const t=$('#toast');t.textContent=message;t.classList.toggle('error',error);t.classList.add('show');toastTimer=setTimeout(()=>t.classList.remove('show'),error?5200:2800);}
 function persist(){clearTimeout(saveTimer);$('#save-status').innerHTML='<span class="status-dot"></span>正在保存…';saveTimer=setTimeout(()=>{try{localStorage.setItem(STORAGE,snapshot());$('#save-status').innerHTML='<span class="status-dot"></span>已保存在此浏览器';}catch{$('#save-status').textContent='保存失败 · 请导出备份';toast('浏览器存储不可用，请导出 JSON 保存方案。',true);}},180);}
 function remember(before){if(before===snapshot())return;history.push(before);if(history.length>70)history.shift();future=[];persist();updateHistory();}
-function mutate(fn,message){const before=snapshot();try{fn();remember(before);render();if(message)toast(message);}catch(error){plan=JSON.parse(before);render();toast(error.message||'这个修改无法应用，请检查参数。',true);}}
+function mutate(fn,message){const before=snapshot();try{fn();scene?.clearMeasurement();remember(before);render();if(message)toast(message);}catch(error){plan=JSON.parse(before);render();toast(error.message||'这个修改无法应用，请检查参数。',true);}}
 function updateHistory(){$('#undo-btn').disabled=!history.length;$('#redo-btn').disabled=!future.length;}
-function undo(){if(!history.length)return;future.push(snapshot());plan=JSON.parse(history.pop());if(!plan.objects.some(o=>o.id===selected))selected=null;persist();render();toast('已撤销');}
-function redo(){if(!future.length)return;history.push(snapshot());plan=JSON.parse(future.pop());if(!plan.objects.some(o=>o.id===selected))selected=null;persist();render();toast('已重做');}
+function undo(){if(!history.length)return;scene?.clearMeasurement();future.push(snapshot());plan=JSON.parse(history.pop());if(!plan.objects.some(o=>o.id===selected))selected=null;persist();render();toast('已撤销');}
+function redo(){if(!future.length)return;scene?.clearMeasurement();history.push(snapshot());plan=JSON.parse(future.pop());if(!plan.objects.some(o=>o.id===selected))selected=null;persist();render();toast('已重做');}
 function select(id){selected=id;scene?.select(id);renderTree();renderInspector();updateStatus();}
 function render(){if(!plan.objects.some(o=>o.id===selected))selected=null;$('#project-title').value=plan.title;$('#object-count').textContent=plan.objects.length;renderTree();renderInspector();updateStatus();updateHistory();scene?.setPlan(plan);scene?.select(selected);}
-function updateStatus(){const o=selectedObject();$('#selection-status').textContent=o?`${o.name} · ${Math.round(o.width)} × ${Math.round(o.depth)} mm${o.locked?' · 已锁定':''}`:`${plan.objects.length} 个独立对象 · 从图形或列表选择` ;}
+function updateStatus(){if(tool==='measure'){const ready=measurement.start&&measurement.end;$('#selection-status').textContent=ready?`测量${measurement.complete?'完成':'预览'} · ${Math.round(measurementMetrics(measurement.start,measurement.end).distance)} mm`:'测量模式 · 点击'+(measurement.start?'终点':'起点');return;}const o=selectedObject();$('#selection-status').textContent=o?`${o.name} · ${Math.round(o.width)} × ${Math.round(o.depth)} mm${o.locked?' · 已锁定':''}`:`${plan.objects.length} 个独立对象 · 从图形或列表选择` ;}
 function filteredObjects(){return plan.objects.filter(o=>(filter==='all'||(filter==='opening'?['door','window'].includes(o.type):o.type===filter))&&(!search||`${o.name} ${o.id} ${roomName(o.room)} ${TYPES[o.type]}`.toLowerCase().includes(search)));}
 function renderTree(){const tree=$('#object-tree');tree.replaceChildren();const grouped=new Map();for(const o of filteredObjects()){const key=roomName(o.room);if(!grouped.has(key))grouped.set(key,[]);grouped.get(key).push(o);}if(!grouped.size){tree.innerHTML='<p class="empty-search">没有找到对象<br>试试房间名、物件名或编号</p>';return;}for(const [room,objects] of grouped){const group=document.createElement('div');group.className='object-group';const toggle=document.createElement('button');toggle.className='group-toggle'+(collapsed.has(room)&&!search?' collapsed':'');toggle.setAttribute('aria-expanded',String(!collapsed.has(room)||!!search));toggle.innerHTML=`${icon('chevron')}<span>${esc(room)}</span><small>${objects.length}</small>`;toggle.addEventListener('click',()=>{collapsed.has(room)?collapsed.delete(room):collapsed.add(room);renderTree();});group.append(toggle);if(!collapsed.has(room)||search){for(const o of objects){const row=document.createElement('div');row.className=`object-row${o.id===selected?' selected':''}${o.visible===false?' invisible':''}`;row.dataset.objectId=o.id;const pick=document.createElement('button');pick.className='object-pick';pick.setAttribute('aria-label',`选择 ${o.name}`);pick.setAttribute('aria-pressed',String(o.id===selected));pick.title=`${o.name} · ${o.id}`;pick.innerHTML=`${icon(objIcon(o))}<span>${esc(o.name)}</span>`;pick.onclick=()=>select(o.id);row.append(pick);const visibility=document.createElement('button');visibility.className=`icon-button row-action${o.visible===false?' marked':''}`;visibility.setAttribute('aria-label',`${o.visible===false?'显示':'隐藏'} ${o.name}`);visibility.innerHTML=icon('eye');visibility.onclick=()=>mutate(()=>{o.visible=o.visible===false;});row.append(visibility);const lock=document.createElement('button');lock.className=`icon-button row-action${o.locked?' marked':''}`;lock.setAttribute('aria-label',`${o.locked?'解锁':'锁定'} ${o.name}`);lock.innerHTML=icon(o.locked?'lock':'unlock');lock.onclick=()=>mutate(()=>{o.locked=!o.locked;});row.append(lock);group.append(row);}}tree.append(group);}}
 
@@ -55,8 +57,44 @@ function refreshInspectorValues(){const o=selectedObject();if(!o)return;for(cons
 function duplicateSelected(){const o=selectedObject();if(!o)return;mutate(()=>{const result=duplicateObject(plan,o.id);selected=result?.id??(typeof result==='string'?result:plan.objects.at(-1)?.id);},'已复制，可拖动调整位置');}
 function deleteSelected(){const o=selectedObject();if(!o)return;if(o.locked){toast('请先解锁这个对象。',true);return;}const dependents=plan.objects.filter(v=>v.wallId===o.id);const apply=()=>mutate(()=>{removeObject(plan,o.id);selected=null;},'已删除，可使用撤销恢复');if(dependents.length)confirmAction('删除墙体？',`「${o.name}」上关联的 ${dependents.length} 个门窗也将删除。可以通过撤销恢复。`,apply);else apply();}
 function confirmAction(title,message,fn){$('#confirm-title').textContent=title;$('#confirm-text').textContent=message;pendingConfirmation=fn;$('#confirm-dialog').showModal();}
-function setView(next){view=next;scene?.setView(view);$('#fullheight-label').hidden=view!=='3d';$('#view-2d').classList.toggle('active',view==='2d');$('#view-3d').classList.toggle('active',view==='3d');$('#view-2d').setAttribute('aria-pressed',String(view==='2d'));$('#view-3d').setAttribute('aria-pressed',String(view==='3d'));$('#mode-hint').innerHTML=`<span class="hint-dot"></span>${view==='3d'?'拖动环绕 · 滚轮缩放 · 属性栏精确编辑':'点击选择 · 拖动移动 · 手柄旋转'}`;$('#view-caption').textContent=view==='3d'?'换个角度，看见你的家。':'让空间，随想法改变。';$('#move-btn').disabled=view==='3d';$('#rotate-btn').disabled=view==='3d';}
-function setTool(next){tool=next;scene?.setTool(tool);for(const name of ['move','rotate']){$(`#${name}-btn`).classList.toggle('active',tool===name);$(`#${name}-btn`).setAttribute('aria-pressed',String(tool===name));}if(tool==='rotate'&&selectedObject()?.wallId)toast('门窗方向跟随墙体，可在属性中翻转开启方向。');}
+function updateModeHint(){
+ const measuring=tool==='measure';
+ $('#mode-hint').innerHTML='<span class="hint-dot"></span>'+(measuring?'点选起点 → 终点 · Esc 清除 / 退出':view==='3d'?'拖动环绕 · 滚轮缩放 · 属性栏精确编辑':'点击选择 · 拖动移动 · 手柄旋转');
+ $('#view-caption').textContent=measuring?'量清每一段距离。':view==='3d'?'换个角度，看见你的家。':'让空间，随想法改变。';
+}
+function updateMeasurement(state){
+ measurement=state;
+ const ready=state.start&&state.end,values=ready?measurementMetrics(state.start,state.end):null;
+ $('#measure-phase').textContent=state.complete?'测量完成 · 点击开始下一条':state.start?'选择终点 · 实时预览':'选择起点';
+ $('#measure-distance').textContent=values?Math.round(values.distance).toLocaleString('zh-CN')+' mm':'—';
+ $('#measure-metres').textContent=values?(values.distance/1000).toFixed(3)+' m':'';
+ $('#measure-dx').textContent=values?Math.round(values.dx).toLocaleString('zh-CN')+' mm':'—';
+ $('#measure-dy').textContent=values?Math.round(values.dy).toLocaleString('zh-CN')+' mm':'—';
+ $('#measure-clear').disabled=!state.start&&!state.end;
+ const instruction=state.complete?'按当前模型计算 · 点击新起点继续测量':'Shift 水平 / 竖直 · Alt 自由取点';
+ $('#measure-help').textContent=(state.snapLabel?'吸附：'+state.snapLabel+' · ':'')+instruction;
+ updateStatus();
+}
+function finishPendingDrag(){
+ if(!dragBefore)return;
+ const before=dragBefore;dragBefore=null;remember(before);render();
+}
+function setView(next){
+ if(next!==view)finishPendingDrag();
+ if(next==='3d'&&tool==='measure')setTool('move');
+ view=next;scene?.setView(view);$('#fullheight-label').hidden=view!=='3d';
+ for(const name of ['2d','3d']){$('#view-'+name).classList.toggle('active',view===name);$('#view-'+name).setAttribute('aria-pressed',String(view===name));}
+ $('#move-btn').disabled=view==='3d';$('#rotate-btn').disabled=view==='3d';updateModeHint();
+}
+function setTool(next){
+ if(next!==tool)finishPendingDrag();
+ if(next==='measure'&&view!=='2d')setView('2d');
+ tool=next;scene?.setTool(tool);
+ for(const name of ['move','rotate','measure']){$('#'+name+'-btn').classList.toggle('active',tool===name);$('#'+name+'-btn').setAttribute('aria-pressed',String(tool===name));}
+ $('#measurement-panel').hidden=tool!=='measure';$('.workspace').classList.toggle('measuring',tool==='measure');
+ $('#snap-detail').textContent=tool==='measure'?'端点 / 边缘':'50 mm';updateModeHint();updateStatus();
+ if(tool==='rotate'&&selectedObject()?.wallId)toast('门窗方向跟随墙体，可在属性中翻转开启方向。');
+}
 function download(data,name,mime){const a=document.createElement('a');let blob;if(typeof data==='string'&&data.startsWith('data:')){const encoded=data.slice(data.indexOf(',')+1),bytes=Uint8Array.from(atob(encoded),c=>c.charCodeAt(0));blob=new Blob([bytes],{type:mime});}else blob=new Blob([data],{type:mime});const url=URL.createObjectURL(blob);a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);}
 const fileName=()=>plan.title.replace(/[\\/:*?"<>|]/g,'-').slice(0,70)||'户型方案';
 function downloadJSON(){download(JSON.stringify(plan,null,2),fileName()+'.json','application/json');$('#export-dialog').close();toast('方案已导出，可随时导入继续编辑');}
@@ -65,6 +103,8 @@ $('#project-title').addEventListener('change',e=>{const value=e.target.value.tri
 $('#object-search').oninput=e=>{search=e.target.value.toLowerCase().trim();renderTree();};
 $$('[data-filter]').forEach(b=>b.onclick=()=>{filter=b.dataset.filter;$$('[data-filter]').forEach(x=>{x.classList.toggle('active',x===b);x.setAttribute('aria-pressed',String(x===b));});renderTree();});
 $('#undo-btn').onclick=undo;$('#redo-btn').onclick=redo;$('#view-2d').onclick=()=>setView('2d');$('#view-3d').onclick=()=>setView('3d');$('#move-btn').onclick=()=>setTool('move');$('#rotate-btn').onclick=()=>setTool('rotate');
+$('#measure-btn').onclick=()=>setTool(tool==='measure'?'move':'measure');
+$('#measure-clear').onclick=()=>scene?.clearMeasurement();$('#measure-exit').onclick=()=>setTool('move');
 $('#mirror-btn').onclick=()=>{mutate(()=>mirrorPlanHorizontally(plan),'已左右镜像，再点一次可翻回；Ctrl+Z 可撤销');scene?.fit();};
 $('#zoom-in').onclick=()=>scene?.zoom(1.2);$('#zoom-out').onclick=()=>scene?.zoom(1/1.2);$('#fit-btn').onclick=()=>scene?.fit();
 for(const option of ['snap','grid','labels','dimensions','reference','fullHeight']){$(`#option-${option}`).onchange=e=>scene?.setOptions({[option]:e.target.checked});}
@@ -79,7 +119,7 @@ $$('dialog').forEach(d=>d.addEventListener('click',e=>{if(e.target!==d)return;co
 $('#add-kind').innerHTML=Object.entries(KINDS).map(([value,label])=>`<option value="${value}">${label}</option>`).join('');
 $('#add-btn').onclick=()=>$('#add-dialog').showModal();$('#add-type').onchange=e=>$('#add-kind-field').hidden=e.target.value!=='furniture';
 $('#add-form').onsubmit=e=>{e.preventDefault();const type=$('#add-type').value,kind=type==='furniture'?$('#add-kind').value:type;mutate(()=>{const o=createObject(type,kind);o.name=$('#add-name').value.trim()||o.name;o.x=5000;o.y=5000;o.room='客餐厅';if(o.wallId)delete o.wallId;plan.objects.push(o);resolveOpenings(plan);selected=o.id;},'已添加对象，可拖动或输入参数');$('#add-dialog').close();$('#add-name').value='';};
-document.addEventListener('keydown',e=>{if(['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName)||document.querySelector('dialog[open]'))return;if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();e.shiftKey?redo():undo();}else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='y'){e.preventDefault();redo();}else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='d'){e.preventDefault();duplicateSelected();}else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){e.preventDefault();downloadJSON();}else if(e.key==='Delete'||e.key==='Backspace'){e.preventDefault();deleteSelected();}else if(e.key.toLowerCase()==='v'&&view==='2d')setTool('move');else if(e.key.toLowerCase()==='r'&&view==='2d')setTool('rotate');else if(e.key==='Escape')select(null);else if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)){const o=selectedObject();if(!o||o.locked)return;e.preventDefault();const step=e.shiftKey?100:10;mutate(()=>updateObject(plan,o.id,{x:o.x+(e.key==='ArrowRight'?step:e.key==='ArrowLeft'?-step:0),y:o.y+(e.key==='ArrowDown'?step:e.key==='ArrowUp'?-step:0)},{linked,anchor}));}});
-try{scene=new PlanScene($('#scene'),{onSelect:select,onTransform(id,patch,phase){if(phase==='start'){dragBefore=snapshot();dragFailed=false;return;}if(!dragBefore)dragBefore=snapshot();try{plan=JSON.parse(dragBefore);updateObject(plan,id,patch,{linked,anchor:'center'});scene.setPlan(plan);scene.select(id);refreshInspectorValues();if(phase==='commit'){remember(dragBefore);dragBefore=null;render();}}catch(error){plan=JSON.parse(dragBefore);scene.setPlan(plan);scene.select(id);refreshInspectorValues();if(!dragFailed)toast(error.message,true);dragFailed=true;if(phase==='commit'){dragBefore=null;render();}}}});scene.setPlan(plan);scene.select(selected);}catch(error){$('#canvas-error').hidden=false;$('#canvas-error').textContent=`无法初始化三维画布：${error.message}。请在支持 WebGL 2 的浏览器中开启硬件加速。对象列表与方案导入导出仍可使用。`;toast('画布初始化失败。',true);}
+document.addEventListener('keydown',e=>{if(['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName)||document.querySelector('dialog[open]'))return;if(tool==='measure'){if(e.key==='Escape'){e.preventDefault();if(measurement.start||measurement.end)scene?.clearMeasurement();else setTool('move');return;}if(['Delete','Backspace','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)||((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='d')){e.preventDefault();return;}}if(e.key.toLowerCase()==='m'&&!e.ctrlKey&&!e.metaKey&&!e.altKey){e.preventDefault();setTool(tool==='measure'?'move':'measure');return;}if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();e.shiftKey?redo():undo();}else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='y'){e.preventDefault();redo();}else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='d'){e.preventDefault();duplicateSelected();}else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){e.preventDefault();downloadJSON();}else if(e.key==='Delete'||e.key==='Backspace'){e.preventDefault();deleteSelected();}else if(e.key.toLowerCase()==='v'&&view==='2d')setTool('move');else if(e.key.toLowerCase()==='r'&&view==='2d')setTool('rotate');else if(e.key==='Escape')select(null);else if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)){const o=selectedObject();if(!o||o.locked)return;e.preventDefault();const step=e.shiftKey?100:10;mutate(()=>updateObject(plan,o.id,{x:o.x+(e.key==='ArrowRight'?step:e.key==='ArrowLeft'?-step:0),y:o.y+(e.key==='ArrowDown'?step:e.key==='ArrowUp'?-step:0)},{linked,anchor}));}});
+try{scene=new PlanScene($('#scene'),{onSelect:select,onMeasurementChange:updateMeasurement,onTransform(id,patch,phase){if(phase==='start'){dragBefore=snapshot();dragFailed=false;return;}if(!dragBefore)dragBefore=snapshot();try{plan=JSON.parse(dragBefore);updateObject(plan,id,patch,{linked,anchor:'center'});scene.setPlan(plan);scene.select(id);refreshInspectorValues();if(phase==='commit'){remember(dragBefore);dragBefore=null;render();}}catch(error){plan=JSON.parse(dragBefore);scene.setPlan(plan);scene.select(id);refreshInspectorValues();if(!dragFailed)toast(error.message,true);dragFailed=true;if(phase==='commit'){dragBefore=null;render();}}}});scene.setPlan(plan);scene.select(selected);}catch(error){$('#canvas-error').hidden=false;$('#canvas-error').textContent=`无法初始化三维画布：${error.message}。请在支持 WebGL 2 的浏览器中开启硬件加速。对象列表与方案导入导出仍可使用。`;toast('画布初始化失败。',true);}
 render();scene?.fit();
 window.addEventListener('beforeunload',()=>{try{localStorage.setItem(STORAGE,snapshot());}catch{}});
