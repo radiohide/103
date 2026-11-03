@@ -14,7 +14,7 @@ let yaw = 0, pitch = 0, fov = 70, zoomScale = 1;
 const keys = new Set();
 const outdoorGroup = new THREE.Group();
 const views = {
-  bed: { number: '05', name: '床款效果', description: '棉花糖软包 · 奶茶咖床头 · 2.00 × 2.25 m', position: [1.38, 1.72, -2.02], target: [-.53, .58, -.15], fov: 72 },
+  bed: { number: '05', name: '床款效果', description: '奶茶咖软包床头 · 平整床框 · 2.00 × 2.25 m', position: [1.38, 1.72, -2.02], target: [-.53, .58, -.15], fov: 72 },
   window: { number: '01', name: '门口看窗', description: '灰木地板 · 转角采光窗', position: [1.08, 1.52, 1.85], target: [-.23, 1.23, -2.2], fov: 71 },
   back: { number: '02', name: '回望房门', description: '两级吊顶 · 长条风口 · 茶色玻璃', position: [.45, 1.52, -1.8], target: [-.05, 1.30, 2.3], fov: 75 },
   detail: { number: '03', name: '窗边细节', description: '窄边窗框 · 石材窗台 · 斜射日光', position: [.9, 1.5, -.15], target: [-.3, 1.19, -2.35], fov: 74 },

@@ -207,15 +207,16 @@ function seamGeometry(width, height, depth, plane = 'xy') {
   return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points, true), 36, .0017, 3, true);
 }
 
-/** NICOROOM marshmallow-style upholstered bed, facing +Z, headboard at -Z.
+/** NICOROOM-inspired upholstered headboard with a plain rigid bed frame.
+ * Facing +Z, headboard at -Z.
  * Entire model is native geometry; no photograph is used as a bed cutout. */
 export function buildBed() {
-  const group = new THREE.Group(); group.name = '法式棉花糖软包床 · 2000 × 2250';
+  const group = new THREE.Group(); group.name = '皮革软包床头与平整床框 · 2000 × 2250';
   const model = new THREE.Group(); group.add(model);
   const linen = fabricTexture(), knit = fabricTexture(true);
   const head = new THREE.MeshPhysicalMaterial({ name: '奶茶咖皮革软包床头', color: '#b49a83', roughness: .54, metalness: 0, ior: 1.45, specularIntensity: .65, clearcoat: .035, clearcoatRoughness: .5, bumpMap: leatherTexture(), bumpScale: .0002, envMapIntensity: .65 });
   head.userData.isBedLeather = true;
-  const base = new THREE.MeshStandardMaterial({ name: '浅米色分块床围', color: '#d4c9b5', roughness: .94, bumpMap: linen, bumpScale: .00065 });
+  const base = new THREE.MeshStandardMaterial({ name: '浅米色哑光硬质床框', color: '#d4c9b5', roughness: .52 });
   const sheet = new THREE.MeshStandardMaterial({ name: '暖白棉质床单', color: '#eeeae1', roughness: .91, bumpMap: linen, bumpScale: .0003, side: THREE.DoubleSide });
   const mattressMaterial = new THREE.MeshStandardMaterial({ name: '白色床垫', color: '#e9e5dc', roughness: .88, bumpMap: linen, bumpScale: .0004 });
   const throwMaterial = new THREE.MeshStandardMaterial({ name: '浅灰针织搭毯', color: '#aaa8a4', roughness: .98, bumpMap: knit, bumpScale: .00125, side: THREE.DoubleSide });
@@ -229,15 +230,25 @@ export function buildBed() {
   const soft = (name, width, height, depth, material, x, y, z, exponent = .4, columns = 28, rows = 16) =>
     mesh(name, cushionGeometry(width, height, depth, exponent, columns, rows), material, x, y, z);
 
-  // Low concealed supports and the upholstered carcass keep the bed grounded.
+  // Flat rigid rails: only a 3 mm edge bevel, no cushion bulges, fabric or seams.
+  const panel = (name, width, height, depth, x, y, z) => {
+    const edge = .003, shape = new THREE.Shape();
+    const halfWidth = width / 2 - edge, halfHeight = height / 2 - edge;
+    shape.moveTo(-halfWidth, -halfHeight); shape.lineTo(halfWidth, -halfHeight);
+    shape.lineTo(halfWidth, halfHeight); shape.lineTo(-halfWidth, halfHeight); shape.closePath();
+    const geometry = new THREE.ExtrudeGeometry(shape, {
+      depth: depth - edge * 2, bevelEnabled: true,
+      bevelThickness: edge, bevelSize: edge, bevelSegments: 2, steps: 1,
+    });
+    geometry.translate(0, 0, -depth / 2 + edge);
+    return mesh(name, geometry, base, x, y, z);
+  };
   for (const x of [-.72, .72]) for (const z of [-.68, .87])
-    soft('隐藏床脚', .09, .07, .09, dark, x, .035, z, .45, 12, 8);
-  soft('连续浅米床围基底', 1.95, .31, 2.01, base, 0, .17, .1025, .28, 32, 16);
-  // Seven pillowy foot sections echo the seven columns of the headboard.
-  for (let i = 0; i < 7; i++)
-    soft(`床尾软包 ${i + 1}`, .279, .31, .20, base, (i - 3) * .278, .17, 1.025, .43, 24, 14);
-  for (const side of [-1, 1]) for (let i = 0; i < 6; i++)
-    soft(`${side < 0 ? '左' : '右'}床围软包 ${i + 1}`, .19, .31, .333, base, side * .902, .17, -.747 + i * .332, .43, 24, 14);
+    mesh('隐藏床脚', new THREE.BoxGeometry(.09, .07, .09), dark, x, .035, z);
+  for (const side of [-1, 1])
+    panel(`${side < 0 ? '左' : '右'}侧平整床框`, .05, .31, 1.98, side * .965, .17, .085);
+  panel('平整床尾板', 1.98, .31, .05, 0, .17, 1.10);
+  panel('床垫承托板', 1.88, .035, 1.95, 0, .3075, .075);
 
   soft('床头皮革软包背板', 1.99, 1.09, .14, head, 0, .575, -1.055, .28, 32, 18).userData.isBedLeather = true;
   mesh('连续浅槽皮革床头 · 7列3排', headboardGeometry(), head).userData.isBedLeather = true;
