@@ -1,3 +1,8 @@
 node_modules/
-qa/
+qa/*
+!qa/wardrobe-through-concept/
+qa/wardrobe-through-concept/app.js
+qa/wardrobe-through-concept/room.js
+qa/wardrobe-through-concept/page.html
+qa/wardrobe-through-concept/build-bundle.mjs
 *.log
