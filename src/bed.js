@@ -54,6 +54,107 @@ function fabricTexture(knitted = false) {
   return texture;
 }
 
+function leatherTexture() {
+  const canvas = document.createElement('canvas'); canvas.width = canvas.height = 512;
+  const ctx = canvas.getContext('2d'), image = ctx.createImageData(512, 512), cells = 64;
+  const random = (x, y, seed) => {
+    const n = Math.sin(x * 127.1 + y * 311.7 + seed * 71.3) * 43758.5453;
+    return n - Math.floor(n);
+  };
+  const features = [];
+  for (let y = 0; y < cells; y++) for (let x = 0; x < cells; x++)
+    features.push([.18 + random(x, y, 1) * .64, .18 + random(x, y, 2) * .64]);
+  for (let y = 0; y < 512; y++) for (let x = 0; x < 512; x++) {
+    const px = x / 8, py = y / 8, ix = Math.floor(px), iy = Math.floor(py);
+    let nearest = Infinity, second = Infinity;
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+      const cx = ix + dx, cy = iy + dy, feature = features[((cy + cells) % cells) * cells + (cx + cells) % cells];
+      const distance = Math.hypot(cx + feature[0] - px, cy + feature[1] - py);
+      if (distance < nearest) { second = nearest; nearest = distance; }
+      else if (distance < second) second = distance;
+    }
+    // Irregular tiny leather-grain creases, with no woven warp/weft pattern.
+    const crease = Math.exp(-(second - nearest) * 16);
+    const value = 142 - crease * 24 + (random(x, y, 8) - .5) * 5;
+    const i = (y * 512 + x) * 4;
+    image.data[i] = image.data[i + 1] = image.data[i + 2] = value; image.data[i + 3] = 255;
+  }
+  ctx.putImageData(image, 0, 0);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(18, 10); texture.anisotropy = 8;
+  return texture;
+}
+
+/** One connected padded leather surface. Closely spaced samples at the seams
+ * retain shallow 12–16 mm channels without opening gaps between separate cells. */
+function headboardGeometry() {
+  const width = 1.99, bottom = .03, top = 1.12, centreY = (bottom + top) / 2, height = top - bottom;
+  const fractions = [0, .018, .035, .065, .12, .20, .31, .43, .5, .57, .69, .80, .88, .935, .965, .982, 1];
+  const xs = [], ys = [bottom, .07, .13, .20, .26];
+  for (let column = 0; column < 7; column++) for (const fraction of fractions)
+    if (column === 0 || fraction > 0) xs.push(-width / 2 + (column + fraction) * width / 7);
+  for (let row = 0; row < 3; row++) for (const fraction of fractions)
+    if (row === 0 || fraction > 0) ys.push(.30 + (row + fraction) * (top - .30) / 3);
+  const positions = [], uvs = [], indices = [], nx = xs.length, ny = ys.length;
+  for (let row = 0; row < ny; row++) for (let column = 0; column < nx; column++) {
+    const rawX = xs[column], y = ys[row], cornerRadius = .066;
+    const verticalCorner = Math.max(0, Math.abs(y - centreY) - (height / 2 - cornerRadius));
+    const rowHalfWidth = width / 2 - cornerRadius + Math.sqrt(Math.max(0, cornerRadius ** 2 - verticalCorner ** 2));
+    const x = rawX / (width / 2) * rowHalfWidth;
+    const tx = (rawX + width / 2) / (width / 7), ty = (y - .30) / ((top - .30) / 3);
+    const cellX = tx - Math.floor(tx), cellY = ty - Math.floor(ty);
+    const inflate = y >= .30 ? .017 * Math.pow(Math.max(0, Math.sin(Math.PI * cellX) * Math.sin(Math.PI * cellY)), .7) : 0;
+    let xSeamDistance = Infinity, ySeamDistance = Infinity;
+    for (let boundary = 1; boundary < 7; boundary++)
+      xSeamDistance = Math.min(xSeamDistance, Math.abs(rawX - (-width / 2 + boundary * width / 7)));
+    for (let boundary = 1; boundary < 3; boundary++)
+      ySeamDistance = Math.min(ySeamDistance, Math.abs(y - (.30 + boundary * (top - .30) / 3)));
+    const verticalSeam = y >= .30 ? Math.exp(-Math.pow(xSeamDistance / .007, 2)) : 0;
+    const horizontalSeam = Math.exp(-Math.pow(ySeamDistance / .007, 2));
+    // The channels are 7 mm deep; their intersections have only a further
+    // 1.5 mm dimple. All use the same leather, with no dark buttons or piping.
+    const seam = .007 * Math.max(verticalSeam, horizontalSeam) + .0015 * verticalSeam * horizontalSeam;
+    const edge = Math.min(rowHalfWidth - Math.abs(x), y - bottom, top - y);
+    const roll = smooth(edge / .055);
+    const z = -1.007 + roll * (.090 + inflate - seam);
+    positions.push(x, y, z); uvs.push((x + width / 2) / width, (y - bottom) / height);
+    if (row + 1 < ny && column + 1 < nx) {
+      const a = row * nx + column, b = a + 1, c = a + nx, d = c + 1;
+      indices.push(a, b, c, b, d, c);
+    }
+  }
+  // Continuous rounded edge strip and a closed rear surface overlap the soft
+  // backing. Sharing the boundary vertices keeps the perimeter normals smooth.
+  const border = [];
+  for (let c = 0; c < nx; c++) border.push(c);
+  for (let r = 1; r < ny; r++) border.push(r * nx + nx - 1);
+  for (let c = nx - 2; c >= 0; c--) border.push((ny - 1) * nx + c);
+  for (let r = ny - 2; r > 0; r--) border.push(r * nx);
+  let previous = border;
+  for (let ring = 1; ring <= 3; ring++) {
+    const t = ring / 3, current = [];
+    for (const index of border) {
+      const i = index * 3, scale = 1 - .008 * smooth(t);
+      current.push(positions.length / 3);
+      positions.push(positions[i] * scale, centreY + (positions[i + 1] - centreY) * scale, -1.007 - .093 * t);
+      uvs.push(uvs[index * 2], uvs[index * 2 + 1]);
+    }
+    for (let i = 0; i < border.length; i++) {
+      const next = (i + 1) % border.length;
+      indices.push(previous[i], current[i], previous[next], previous[next], current[i], current[next]);
+    }
+    previous = current;
+  }
+  const backCentre = positions.length / 3; positions.push(0, centreY, -1.10); uvs.push(.5, .5);
+  for (let i = 0; i < previous.length; i++) indices.push(previous[i], backCentre, previous[(i + 1) % previous.length]);
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  geometry.setIndex(indices); geometry.computeVertexNormals();
+  return geometry;
+}
+
 function sheetHeight(x, z) {
   const side = smooth((Math.abs(x) - .86) / .128);
   const foot = smooth((z - .93) / .17);
@@ -112,12 +213,12 @@ export function buildBed() {
   const group = new THREE.Group(); group.name = '法式棉花糖软包床 · 2000 × 2250';
   const model = new THREE.Group(); group.add(model);
   const linen = fabricTexture(), knit = fabricTexture(true);
-  const head = new THREE.MeshStandardMaterial({ name: '奶茶咖软包床头', color: '#b49a83', roughness: .93, bumpMap: linen, bumpScale: .0007 });
+  const head = new THREE.MeshPhysicalMaterial({ name: '奶茶咖皮革软包床头', color: '#b49a83', roughness: .54, metalness: 0, ior: 1.45, specularIntensity: .65, clearcoat: .035, clearcoatRoughness: .5, bumpMap: leatherTexture(), bumpScale: .0002, envMapIntensity: .65 });
+  head.userData.isBedLeather = true;
   const base = new THREE.MeshStandardMaterial({ name: '浅米色分块床围', color: '#d4c9b5', roughness: .94, bumpMap: linen, bumpScale: .00065 });
   const sheet = new THREE.MeshStandardMaterial({ name: '暖白棉质床单', color: '#eeeae1', roughness: .91, bumpMap: linen, bumpScale: .0003, side: THREE.DoubleSide });
   const mattressMaterial = new THREE.MeshStandardMaterial({ name: '白色床垫', color: '#e9e5dc', roughness: .88, bumpMap: linen, bumpScale: .0004 });
   const throwMaterial = new THREE.MeshStandardMaterial({ name: '浅灰针织搭毯', color: '#aaa8a4', roughness: .98, bumpMap: knit, bumpScale: .00125, side: THREE.DoubleSide });
-  const headSeam = new THREE.MeshStandardMaterial({ name: '床头细缝线', color: '#a78e78', roughness: 1 });
   const cottonSeam = new THREE.MeshStandardMaterial({ name: '枕套细滚边', color: '#dfdacf', roughness: .96 });
   const dark = new THREE.MeshStandardMaterial({ name: '床底暗部', color: '#585047', roughness: .96 });
   const mesh = (name, geometry, material, x = 0, y = 0, z = 0) => {
@@ -138,18 +239,8 @@ export function buildBed() {
   for (const side of [-1, 1]) for (let i = 0; i < 6; i++)
     soft(`${side < 0 ? '左' : '右'}床围软包 ${i + 1}`, .19, .31, .333, base, side * .902, .17, -.747 + i * .332, .43, 24, 14);
 
-  soft('床头软包背板', 1.99, 1.09, .14, head, 0, .575, -1.055, .28, 32, 18);
-  for (let row = 0; row < 3; row++) for (let column = 0; column < 7; column++) {
-    const x = (column - 3) * .278, y = .437 + row * .27;
-    const cell = soft(`床头第 ${row + 1} 排第 ${column + 1} 格`, .278, .278, .193, head, x, y, -.973, .46, 26, 16);
-    // Very small shifts avoid a sterile array while preserving upholstery seams.
-    cell.rotation.z = Math.sin(column * 2.4 + row) * .006;
-    mesh('软包缝边', seamGeometry(.252, .252, .034), headSeam, x, y, -.973);
-  }
-  // Small recessed tuft points are visible in the horizontal join, never studs.
-  const tuftGeometry = new THREE.SphereGeometry(.004, 8, 6);
-  for (let row = 0; row < 2; row++) for (let column = 0; column < 6; column++)
-    mesh('软包拉点', tuftGeometry, headSeam, (column - 2.5) * .278, .5715 + row * .27, -.955);
+  soft('床头皮革软包背板', 1.99, 1.09, .14, head, 0, .575, -1.055, .28, 32, 18).userData.isBedLeather = true;
+  mesh('连续浅槽皮革床头 · 7列3排', headboardGeometry(), head).userData.isBedLeather = true;
 
   soft('圆角白床垫', 1.865, .195, 1.965, mattressMaterial, 0, .4225, .0825, .28, 40, 18);
   mesh('白床垫包边', seamGeometry(1.80, 1.90, .492, 'xz'), cottonSeam, 0, 0, .0825);
