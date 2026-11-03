@@ -8,6 +8,7 @@ const photos = __PHOTOS;
 const config = { width: 3.4, depth: 4.7, ceilingHeight: 2.7, soffitHeight: 2.4 };
 const rad = n => n * Math.PI / 180;
 let renderer, scene, camera, room, materials, sun, ambient, skylight, reflection, reflectionCamera, mirror;
+const bronzeReflectors = [];
 let currentView = 'window', photoIndex = 0, toastTimer, activeDrag = null, cameraTransition = null, lastTime = 0, nextReflection = 0;
 let yaw = 0, pitch = 0, fov = 70, zoomScale = 1;
 const keys = new Set();
@@ -36,6 +37,7 @@ function setView(name, instant = false) {
   if (instant) { camera.position.copy(targetCamera.position); camera.quaternion.copy(targetCamera.quaternion); camera.fov = fov; camera.updateProjectionMatrix(); cameraTransition = null; setAngles(); }
   room.group.traverse(o => { if (o.userData.ceiling) o.visible = name !== 'overhead'; });
   if (room.ceilingGroup) room.ceilingGroup.visible = name !== 'overhead';
+  bronzeReflectors.forEach(o => { o.visible = name !== 'overhead'; });
   outdoorGroup.visible = name !== 'overhead';
   scene.background.set(name === 'overhead' ? '#e6e5de' : '#b8cccf');
   document.querySelectorAll('[data-view]').forEach(b => { b.classList.toggle('active', b.dataset.view === name); b.setAttribute('aria-pressed', String(b.dataset.view === name)); });
@@ -69,8 +71,8 @@ function addContactShading(material) {
 }
 function createEnvironment() {
   const envScene = new THREE.Scene();
-  envScene.background = new THREE.Color('#8b9289');
-  const shell = new THREE.Mesh(new THREE.SphereGeometry(12, 24, 12), new THREE.MeshBasicMaterial({ color: '#9fa89e', side: THREE.BackSide })); envScene.add(shell);
+  envScene.background = new THREE.Color('#a1a6a6');
+  const shell = new THREE.Mesh(new THREE.SphereGeometry(12, 24, 12), new THREE.MeshBasicMaterial({ color: '#b0b6b8', side: THREE.BackSide })); envScene.add(shell);
   const glow = new THREE.Mesh(new THREE.PlaneGeometry(5, 4), new THREE.MeshBasicMaterial({ color: new THREE.Color(2.5, 2.7, 2.8), side: THREE.DoubleSide })); glow.position.set(0, 1, -6); envScene.add(glow);
   const pmrem = new THREE.PMREMGenerator(renderer); const map = pmrem.fromScene(envScene, .25, .1, 30); scene.environment = map.texture; scene.environmentIntensity = .18;
   pmrem.dispose(); shell.geometry.dispose(); shell.material.dispose(); glow.geometry.dispose(); glow.material.dispose();
@@ -99,10 +101,10 @@ function neutralWood(texture) {
   const w=canvas.width,h=canvas.height,stride=w+1, integral=new Float64Array((w+1)*(h+1));
   for(let y=0;y<h;y++){let sum=0;for(let x=0;x<w;x++){const i=(y*w+x)*4;sum+=data[i]*.2126+data[i+1]*.7152+data[i+2]*.0722;integral[(y+1)*stride+x+1]=integral[y*stride+x+1]+sum;}}
   for(let y=0;y<h;y++)for(let x=0;x<w;x++){
-    const x0=Math.max(0,x-24),x1=Math.min(w,x+25),y0=Math.max(0,y-24),y1=Math.min(h,y+25),i=(y*w+x)*4;
+    const x0=Math.max(0,x-90),x1=Math.min(w,x+91),y0=Math.max(0,y-160),y1=Math.min(h,y+161),i=(y*w+x)*4;
     const mean=(integral[y1*stride+x1]-integral[y0*stride+x1]-integral[y1*stride+x0]+integral[y0*stride+x0])/((x1-x0)*(y1-y0));
-    const detail=THREE.MathUtils.clamp((data[i]*.2126+data[i+1]*.7152+data[i+2]*.0722-mean)*1.55,-30,30);
-    data[i]=105+detail;data[i+1]=106+detail;data[i+2]=100+detail;
+    const detail=THREE.MathUtils.clamp((data[i]*.2126+data[i+1]*.7152+data[i+2]*.0722-mean)*.75,-22,22);
+    data[i]=107+detail;data[i+1]=106+detail;data[i+2]=102+detail;
   }
   ctx.putImageData(image,0,0);texture.needsUpdate=true;
 }
@@ -112,17 +114,18 @@ async function outdoors() {
   neutralWood(realOak);
   realOak.wrapS = realOak.wrapT = THREE.ClampToEdgeWrapping;
   for (const [i, mat] of [materials.wood, ...materials.woodVariants].entries()) {
-    mat.map = realOak.clone(); mat.map.offset.set(0, 0); mat.map.repeat.set(1, 1);
-    mat.map.needsUpdate = true; mat.bumpScale = .00035; mat.roughness = .72; mat.needsUpdate = true;
+    mat.map = realOak.clone(); mat.map.offset.set(i%2 ? 1 : 0, i%3 === 1 ? 1 : 0); mat.map.repeat.set(i%2 ? -1 : 1, i%3 === 1 ? -1 : 1);
+    mat.bumpMap = mat.map.clone(); mat.bumpMap.colorSpace = THREE.NoColorSpace;
+    mat.map.needsUpdate = mat.bumpMap.needsUpdate = true; mat.bumpScale = .00012; mat.roughness = .61; mat.needsUpdate = true;
   }
   const image = new Image(); image.src = photos[2]; await image.decode();
   const texture = cropPhoto(image, [[.168,.397],[.354,.401],[.355,.666],[.168,.700]], 1100, 1300);
-  const backdrop = new THREE.Mesh(new THREE.PlaneGeometry(10, 10.7), new THREE.MeshBasicMaterial({ map: texture, color: '#ddddcf', toneMapped: false, side: THREE.DoubleSide }));
-  backdrop.name = '实拍窗外建筑'; backdrop.position.set(-.15, 2.1, -7.3); outdoorGroup.add(backdrop);
+  const backdrop = new THREE.Mesh(new THREE.PlaneGeometry(6.9, 6.9), new THREE.MeshBasicMaterial({ map: texture, color: '#eeeee9', toneMapped: false, side: THREE.DoubleSide }));
+  backdrop.name = '实拍窗外建筑'; backdrop.position.set(-.75, 1.65, -5.5); outdoorGroup.add(backdrop);
   const treeImage = new Image(); treeImage.src = photos[3]; await treeImage.decode();
   const sideTexture = cropPhoto(treeImage, [[.394,.376],[.569,.331],[.571,.788],[.395,.720]], 750, 1200);
-  const side = new THREE.Mesh(new THREE.PlaneGeometry(8, 9), new THREE.MeshBasicMaterial({ map: sideTexture, color: '#dde4d9', toneMapped: false, side: THREE.DoubleSide }));
-  side.position.set(-6.2, 2, -2); side.rotation.y = Math.PI / 2; outdoorGroup.add(side); scene.add(outdoorGroup);
+  const side = new THREE.Mesh(new THREE.PlaneGeometry(6.5, 6.75), new THREE.MeshBasicMaterial({ map: sideTexture, color: '#e9eee5', toneMapped: false, side: THREE.DoubleSide }));
+  side.position.set(-4.2, 1.65, -2.25); side.rotation.y = Math.PI / 2; outdoorGroup.add(side); scene.add(outdoorGroup);
 }
 function updateSun() {
   const azimuth = +$('#sun-angle').value, altitude = +$('#sun-height').value, enabled = $('#sun-enabled').checked;
@@ -172,7 +175,8 @@ function rebuild() {
     $('#ceiling-height').value = config.ceilingHeight; $('#soffit-height').value = config.soffitHeight; toast('中央顶面需比吊顶高至少 0.1 m'); return;
   }
   config.ceilingHeight = top; config.soffitHeight = low;
-  if (mirror) { mirror.dispose(); mirror.geometry.dispose(); mirror = null; }
+  for (const surface of [mirror, ...bronzeReflectors]) if (surface) { surface.dispose(); surface.geometry.dispose(); }
+  mirror = null; bronzeReflectors.length = 0;
   scene.remove(room.group); room.dispose(); room = buildRoom(materials, config); scene.add(room.group); installMirror();
   room.group.traverse(o => { if (o.isMesh) for (const m of Array.isArray(o.material) ? o.material : [o.material]) { addContactShading(m); if (m.userData.roomShader) m.userData.roomShader.uniforms.roomHeight.value = top; } });
   installLights(); updateDoors(); setView(currentView, true);
@@ -182,9 +186,8 @@ function updateReflection() {
   if (!reflectionCamera || currentView === 'overhead') return;
   const hidden = [];
   room.group.traverse(o => { if (o.isMesh && [materials.glass, materials.bronzeGlass].includes(o.material) && o.visible) { o.visible = false; hidden.push(o); } });
-  const wasVisible = mirror?.visible; if (mirror) mirror.visible = false;
+  for (const surface of [mirror, ...bronzeReflectors]) if (surface?.visible) { surface.visible = false; hidden.push(surface); }
   reflectionCamera.update(renderer, scene);
-  if (mirror) mirror.visible = wasVisible;
   hidden.forEach(o => o.visible = true);
   materials.bronzeGlass.envMap = reflection.texture; materials.bronzeGlass.envMapIntensity = .75;
   materials.glass.envMap = reflection.texture; materials.glass.envMapIntensity = .25;
@@ -195,6 +198,29 @@ function installMirror() {
   mirror = new Reflector(original.geometry.clone(), { color: '#aeb3ac', textureWidth: 768, textureHeight: 768, clipBias: .003 });
   mirror.position.copy(original.position); mirror.position.z -= .001; mirror.quaternion.copy(original.quaternion);
   original.visible = false; room.group.add(mirror);
+  const panels = [];
+  room.group.traverse(o => { if (o.isMesh && o.material === materials.bronzeGlass) panels.push(o); });
+  for (const panel of panels) {
+    const { width, height } = panel.geometry.parameters;
+    const reflected = new Reflector(new THREE.PlaneGeometry(width, height), { textureWidth: 512, textureHeight: 768, clipBias: .002, multisample: 0 });
+    reflected.name = '茶色玻璃实时反射';
+    reflected.position.copy(panel.position); reflected.position.z -= .006;
+    reflected.rotation.y = Math.PI;
+    reflected.material.fragmentShader = reflected.material.fragmentShader.replace('vec4( blendOverlay( base.rgb, color ), 1.0 )', 'vec4( base.rgb * vec3(.32, .27, .20) + vec3(.012, .009, .006), .88 )');
+    reflected.material.transparent = true; reflected.material.depthWrite = false;
+    reflected.renderOrder = 3;
+    panel.parent.add(reflected); bronzeReflectors.push(reflected);
+  }
+  // One reflected bounce avoids recursive render passes between facing glass.
+  for (const surface of [mirror, ...bronzeReflectors]) {
+    const renderReflection = surface.onBeforeRender;
+    surface.onBeforeRender = function (...args) {
+      const hidden = [mirror, ...bronzeReflectors].filter(o => o !== surface && o.visible);
+      hidden.forEach(o => { o.visible = false; });
+      try { renderReflection.apply(surface, args); }
+      finally { hidden.forEach(o => { o.visible = true; }); }
+    };
+  }
 }
 function bindNavigation() {
   const el = renderer.domElement; el.tabIndex = 0;
@@ -235,7 +261,7 @@ function bindUI() {
   $('#references').onclick=()=>{showPhoto(photoIndex);$('#photo-dialog').showModal();};$('#photo-close').onclick=()=>$('#photo-dialog').close();$('#photo-prev').onclick=()=>showPhoto(photoIndex-1);$('#photo-next').onclick=()=>showPhoto(photoIndex+1);
   $('#photo-tabs').replaceChildren(...photos.map((_,i)=>{const b=document.createElement('button');b.textContent=`0${i+1}`;b.dataset.photo=i;b.onclick=()=>showPhoto(i);return b;}));
   $('#photo-dialog').addEventListener('click',e=>{if(e.target===$('#photo-dialog'))$('#photo-dialog').close();});
-  $('#save-image').onclick=()=>{renderer.render(scene,camera);const a=document.createElement('a');a.href=renderer.domElement.toDataURL('image/png');a.download=`卧室二-${views[currentView].name}.png`;a.click();toast('当前画面已保存');};
+  $('#save-image').onclick=()=>{renderer.render(scene,camera);renderer.domElement.toBlob(blob=>{if(!blob){toast('画面生成失败，请重试');return;}const a=document.createElement('a'),url=URL.createObjectURL(blob);a.href=url;a.download=`卧室二-${views[currentView].name}.png`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);toast('已生成 PNG，正在下载');},'image/png');};
 }
 async function init() {
   renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.75));
@@ -245,8 +271,9 @@ async function init() {
   materials=createMaterials();room=buildRoom(materials,config);scene.add(room.group);
   room.group.traverse(o=>{if(o.isMesh)for(const m of Array.isArray(o.material)?o.material:[o.material])addContactShading(m);});
   installMirror();
-  ambient=new THREE.HemisphereLight('#e4eced','#c0b7a4',1.35);scene.add(ambient);
-  skylight=new THREE.PointLight('#deebfa',4.5,10,2);skylight.position.set(-.2,1.95,-2.6);scene.add(skylight);
+  ambient=new THREE.HemisphereLight('#edf3fa','#bab6ae',1.18);scene.add(ambient);
+  skylight=new THREE.Group();
+  for(const x of [-.85,.7]){const fill=new THREE.PointLight('#e4edf8',3.7,11,2);fill.position.set(x,1.65,-2.55);skylight.add(fill);}scene.add(skylight);
   sun=new THREE.DirectionalLight('#fff0d5',3.8);sun.castShadow=true;sun.shadow.mapSize.set(4096,4096);Object.assign(sun.shadow.camera,{left:-5,right:5,top:5,bottom:-5,near:.1,far:35});sun.shadow.bias=-.00012;sun.shadow.normalBias=.012;sun.shadow.radius=2;scene.add(sun,sun.target);
   reflection=new THREE.WebGLCubeRenderTarget(192,{type:THREE.HalfFloatType});reflectionCamera=new THREE.CubeCamera(.08,30,reflection);reflectionCamera.position.set(-.3,1.25,2.10);scene.add(reflectionCamera);
   await outdoors();installLights();updateSun();updateDoors();bindNavigation();bindUI();resize();setView('window',true);

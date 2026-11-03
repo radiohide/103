@@ -39,13 +39,16 @@ function plasterMaps() {
   for (let y = 0; y < 512; y++) for (let x = 0; x < 512; x++) {
     const i = (y * 512 + x) * 4;
     const grain = hash(x, y, 18), cloudy = fbm(x / 65, y / 65, 6) - .5;
-    // Slight paper/fabric tooth, without a regular visible checker pattern.
-    const tooth = (grain - .5) * 6.8 + (noise(x / 2.2, y / 2.2, 10) - .5) * 3.5;
+    // A subdued woven tooth: elongated, irregular fibres rather than coarse
+    // white-noise speckles or a conspicuous regular fabric grid.
+    const fibres = (noise(x / 1.8, y / 22, 24) - .5) * 2.5
+      + (noise(x / 19, y / 2.3, 28) - .5) * 1.3;
+    const tooth = (grain - .5) * 3.7 + (noise(x / 2.2, y / 2.2, 10) - .5) * 2.1 + fibres;
     image.data[i] = clamp(213 + tooth + cloudy * 2);
     image.data[i + 1] = clamp(213 + tooth + cloudy * 2);
     image.data[i + 2] = clamp(204 + tooth + cloudy * 2);
     image.data[i + 3] = 255;
-    relief.data[i] = relief.data[i + 1] = relief.data[i + 2] = 98 + grain * 54;
+    relief.data[i] = relief.data[i + 1] = relief.data[i + 2] = 113 + grain * 27 + fibres * 3.1;
     relief.data[i + 3] = 255;
   }
   ctx.putImageData(image, 0, 0); hc.putImageData(relief, 0, 0);
@@ -53,7 +56,9 @@ function plasterMaps() {
 }
 
 function oakMaps() {
-  const width = 512, height = 2048;
+  // Lightweight fallback; the application replaces this with the embedded
+  // photograph before the first frame, so large generated maps only delay loading.
+  const width = 128, height = 512;
   const colour = canvas(width, height), relief = canvas(width, height);
   const ctx = colour.getContext('2d'), hc = relief.getContext('2d');
   const image = ctx.createImageData(width, height), bump = hc.createImageData(width, height);
@@ -91,15 +96,32 @@ function marbleMaps() {
   const c = canvas(768), ctx = c.getContext('2d');
   const image = ctx.createImageData(768, 768);
   for (let y = 0; y < 768; y++) for (let x = 0; x < 768; x++) {
-    const n = fbm(x / 150, y / 150, 45);
-    const field = x + y * .56 + (fbm(x / 180, y / 180, 29) - .5) * 430;
-    const line = Math.abs(Math.sin(field * .018 + .8));
-    const mainVein = Math.exp(-line * line * 360);
-    const fringe = Math.exp(-line * line * 28);
-    const secondary = Math.exp(-Math.pow(Math.sin((field + noise(x / 70, y / 70, 9) * 80) * .035), 2) * 650) * .18;
-    const tone = 222 + (n - .5) * 25 - mainVein * 78 - fringe * 15 - secondary * 55;
+    // Large pale mineral clouds establish the stone before its sparse veins.
+    // Bounded domain warping keeps the strata diagonal: no repeating sine
+    // contours, closed loops or heavy black meanders.
+    const cloud = fbm((x + y * .22) / 230, y / 165, 45);
+    const haze = fbm(x / 390, y / 340, 51);
+    const drift = (noise(x / 270, y / 270, 29) - .5) * 78
+      + (noise(x / 72, y / 105, 41) - .5) * 15;
+    const field = x * .76 + y * .56 + drift;
+    const mineral = Math.exp(-Math.pow((field - 505) / 112, 2)) * (.55 + haze * .45);
+    let veins = 0, feather = 0;
+    for (const [index, centre] of [174, 523, 884].entries()) {
+      const distance = Math.abs(field - centre);
+      const broken = .22 + .78 * smooth(noise(x / 95, y / 135, 63 + index));
+      veins += Math.exp(-Math.pow(distance / (1.05 + index * .2), 2)) * broken;
+      feather += Math.exp(-Math.pow(distance / (7 + index * 2), 2)) * broken;
+    }
+    // A few fine offshoots join a parent vein and fade into the cloud layer.
+    const branchLength = 285, branchT = clamp((y - 204) / branchLength, 0, 1);
+    const branchGate = y >= 204 && y <= 204 + branchLength ? Math.pow(1 - branchT, .8) : 0;
+    const branchDistance = Math.abs(field - (523 - branchT * 102 + noise(y / 70, 2, 81) * 3));
+    const branch = Math.exp(-Math.pow(branchDistance / .72, 2)) * branchGate;
+    const fineDust = (hash(x, y, 92) - .5) * .65;
+    const tone = 233 + (cloud - .5) * 21 + (haze - .5) * 8
+      - mineral * 7 - veins * 43 - feather * 7 - branch * 24 + fineDust;
     const i = (y * 768 + x) * 4;
-    image.data[i] = clamp(tone); image.data[i + 1] = clamp(tone + 1); image.data[i + 2] = clamp(tone - 2); image.data[i + 3] = 255;
+    image.data[i] = clamp(tone - .5); image.data[i + 1] = clamp(tone + .4); image.data[i + 2] = clamp(tone + .8); image.data[i + 3] = 255;
   }
   ctx.putImageData(image, 0, 0);
   return texture(c);

@@ -50,7 +50,7 @@ export function buildRoom(materials, config = {}) {
   }
 
   // Solid room shell around actual openings. Walls extend outwards from the clear dimensions.
-  const wallT = .12, windowLeft = left + .035, windowRight = right - .45;
+  const wallT = .12, windowLeft = left - wallT / 2, windowRight = right - .45;
   const windowBottom = .12, windowTop = Math.min(2.35, S - .035);
   const cornerReturn = .46;
   const doorZ0 = back - 1.075, doorZ1 = back - .125, doorHeight = Math.min(2.32, S - .07);
@@ -76,10 +76,13 @@ export function buildRoom(materials, config = {}) {
   box(bathLeft - left, skirtH, skirtD, (bathLeft + left) / 2, skirtH / 2, back - skirtD / 2, seal, '后墙左收边');
 
   // Large front light and its short left-hand return. Every mullion is solid and casts its own shadow.
-  const frame = .044, frameDepth = .072, winZ = front + .018;
+  // Set the L-shaped window into the wall thickness, not against its room face.
+  const frame = .044, frameDepth = .072, winZ = front - wallT / 2;
+  const returnX = left - wallT / 2, returnStart = winZ, returnEnd = front + cornerReturn;
+  const returnLength = returnEnd - returnStart, returnCentre = (returnStart + returnEnd) / 2;
   const lightWidth = windowRight - windowLeft, lightHeight = windowTop - windowBottom;
-  box(lightWidth + .04, .055, .205, (windowLeft + windowRight) / 2, windowBottom - .01, front + .055, materials.stone, '石材窗台');
-  box(.205, .055, cornerReturn + .06, left + .055, windowBottom - .01, front + cornerReturn / 2, materials.stone, '转角石材窗台');
+  box(lightWidth + .04, .055, wallT + .01, (windowLeft + windowRight) / 2, windowBottom - .01, winZ, materials.stone, '石材窗台');
+  box(wallT + .01, .055, returnLength + .04, returnX, windowBottom - .01, returnCentre, materials.stone, '转角石材窗台');
   for (const x of [windowLeft + frame / 2, windowRight - frame / 2]) box(frame, lightHeight, frameDepth, x, (windowTop + windowBottom) / 2, winZ, materials.blackMetal, '窗外框竖梃');
   for (const y of [windowBottom + frame / 2, windowTop - frame / 2]) box(lightWidth, frame, frameDepth, (windowLeft + windowRight) / 2, y, winZ, materials.blackMetal, '窗外框横梃');
   const mullionX = .35, crossY = .76;
@@ -104,10 +107,10 @@ export function buildRoom(materials, config = {}) {
   box(.022, .132, .025, -leafWidth + .045, 1.53, .06, materials.blackMetal, '窗把手', windowLeaf);
   for (const y of [.95, 2.10]) cylinder(.011, .08, .023, Math.min(y, leafTop - .12), .018, materials.blackMetal, '窗铰链', windowLeaf);
   windowLeaf.userData.closedRotation = 0; windowLeaf.userData.openRotation = Math.PI * .31;
-  const returnGlass = mesh(new THREE.PlaneGeometry(cornerReturn - .058, lightHeight - frame * 2), materials.glass, '左侧转角固定窗');
-  returnGlass.rotation.y = Math.PI / 2; returnGlass.position.set(left + .018, (windowTop + windowBottom) / 2, front + cornerReturn / 2); returnGlass.castShadow = false;
-  for (const z of [front + .022, front + cornerReturn - .02]) box(frameDepth, lightHeight, frame, left + .018, (windowTop + windowBottom) / 2, z, materials.blackMetal, '转角窗立框');
-  for (const y of [windowBottom + frame / 2, windowTop - frame / 2]) box(frameDepth, frame, cornerReturn, left + .018, y, front + cornerReturn / 2, materials.blackMetal, '转角窗横框');
+  const returnGlass = mesh(new THREE.PlaneGeometry(returnLength - frame * 2, lightHeight - frame * 2), materials.glass, '左侧转角固定窗');
+  returnGlass.rotation.y = Math.PI / 2; returnGlass.position.set(returnX, (windowTop + windowBottom) / 2, returnCentre); returnGlass.castShadow = false;
+  for (const z of [returnStart + frame / 2, returnEnd - frame / 2]) box(frameDepth, lightHeight, frame, returnX, (windowTop + windowBottom) / 2, z, materials.blackMetal, '转角窗立框');
+  for (const y of [windowBottom + frame / 2, windowTop - frame / 2]) box(frameDepth, frame, returnLength, returnX, y, returnCentre, materials.blackMetal, '转角窗横框');
 
   // White, nearly flush entry door in the right wall. Hinge is at the back edge.
   for (const z of [doorZ0, doorZ1]) box(.15, doorHeight + .02, .025, right, doorHeight / 2, z, materials.blackMetal, '房门细框');
@@ -181,7 +184,7 @@ export function buildRoom(materials, config = {}) {
   for (const x of [left + sideBand + .012, right - sideBand - .012]) box(.024, .022, D - frontBand - rearBand + .04, x, trimY, (frontBand - rearBand) / 2, materials.ceiling, '内侧细阶梯线脚', ceilingGroup);
   for (const z of [front + frontBand + .012, back - rearBand - .012]) box(W - sideBand * 2 + .02, .022, .024, 0, trimY, z, materials.ceiling, '内侧细阶梯线脚', ceilingGroup);
   // Shadow at the intersection gives the recessed centre its fine outline.
-  const revealMaterial = paint('#646b60', 1);
+  const revealMaterial = paint('#999d93', 1);
   for (const x of [left + sideBand + .004, right - sideBand - .004]) box(.008, .004, D - frontBand - rearBand, x, H - .006, (frontBand - rearBand) / 2, revealMaterial, '中央天花阴缝', ceilingGroup);
   for (const z of [front + frontBand + .004, back - rearBand - .004]) box(W - sideBand * 2, .004, .008, 0, H - .006, z, revealMaterial, '中央天花阴缝', ceilingGroup);
   // Back-wall long AC grille faces the room; the slots are geometry, not a flat decal.
