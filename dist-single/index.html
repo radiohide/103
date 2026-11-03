@@ -28,8 +28,7 @@
 .furniture-clipboard{padding:15px 17px 12px;border-bottom:1px solid var(--line);background:#f3f6ed}.clipboard-heading{display:flex;justify-content:space-between;gap:8px;font-size:11px;color:#57724b;margin-bottom:11px}.clipboard-heading>span:last-child{font-size:9px;color:#8a9b7d}.clipboard-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.clipboard-actions .button{font-size:11px;padding:7px 6px;min-width:0;gap:5px}.clipboard-actions svg{width:14px;height:14px}.clipboard-status{margin:9px 0 0;font-size:10px;line-height:1.6;color:#849777;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}@media(max-width:850px) and (min-width:641px){.furniture-clipboard{padding:12px}.clipboard-actions{gap:5px}.clipboard-actions .button{font-size:10px;padding:7px 4px}}
 
 </style>
-  
-</head>
+  </head>
 <body>
   <svg class="icon-defs" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs>
     <symbol id="i-home" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v11h-7v-8h-4v8H3z"/></symbol>
@@ -83828,7 +83827,7 @@ __M["app/model"] = (function () {
 'use strict';
 /** Apartment plan model. All measurements are millimetres; rotations are clockwise. */
 const TYPES = Object.freeze({ wall: '墙体', door: '门 / 洞口', window: '窗', furniture: '家具 / 设备' });
-const KIND_LABELS = Object.freeze({ bed: '双人床', nightstand: '床头柜', wardrobe: '衣柜', cabinet: '储物柜', counter: '台面', sink: '水槽', stove: '灶台', fridge: '冰箱', toilet: '马桶', shower: '淋浴区', vanity: '浴室柜', basin: '洗手盆', 'dining-table': '餐桌', chair: '餐椅', sofa: '沙发', 'coffee-table': '茶几', rug: '地毯', armchair: '单椅', washer: '洗衣机', plant: '绿植', lamp: '台灯', bench: '长凳', 'side-table': '边几', opening: '敞口', single: '平开门', sliding: '推拉门', fixed: '固定窗' });
+const KIND_LABELS = Object.freeze({ bed: '双人床', nightstand: '床头柜', wardrobe: '衣柜', cabinet: '储物柜', sideboard: '餐边柜', counter: '台面', sink: '水槽', stove: '灶台', fridge: '冰箱', toilet: '马桶', shower: '淋浴区', vanity: '浴室柜', basin: '洗手盆', 'dining-table': '餐桌', chair: '餐椅', sofa: '沙发', 'coffee-table': '茶几', rug: '地毯', armchair: '单椅', washer: '洗衣机', plant: '绿植', lamp: '台灯', bench: '长凳', 'side-table': '边几', opening: '敞口', single: '平开门', sliding: '推拉门', fixed: '固定窗' });
 
 const clone = value => JSON.parse(JSON.stringify(value));
 const EPS = 5;
@@ -83837,6 +83836,7 @@ const LIVING_BALCONY_EDIT = 'remove-living-study-balcony-partitions-2026-11-02';
 const BATH2_SLIDING_EDIT = 'correct-bathroom2-sliding-door-2026-11-02';
 const HORIZONTAL_MIRROR_EDIT = 'mirror-plan-horizontal-2026-11-02';
 const NORTH_BALCONY_EDIT = 'remove-bedroom1-north-balcony-partition-2026-11-02';
+const SIDEBOARD_EDIT = 'add-dining-sideboard-2026-11-03';
 const deg = value => ((value % 360) + 360) % 360;
 const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 const GEOMETRY_FIELDS = ['x', 'y', 'width', 'depth', 'height', 'rotation', 'mirrorY', 'wallId', 'offset', 'sill', 'hinge', 'swing', 'kind'];
@@ -84172,10 +84172,40 @@ function createObject(type = 'furniture', kind) {
   const object = { id: freshId(type), name: `新${KIND_LABELS[kind] || TYPES[type]}`, type, room: '未分区', x: 4900, y: 4500, rotation: 0, mirrorY: false, visible: true, locked: false, estimated: true, ...defaults[type] };
   if (kind) object.kind = kind;
   if (type === 'furniture') {
-    const sizes = { bed: [1600, 2000, 550], sofa: [2100, 850, 780], chair: [450, 480, 800], 'dining-table': [850, 1700, 750], 'coffee-table': [1000, 550, 420], armchair: [700, 750, 800], plant: [350, 350, 900], rug: [2400, 1800, 15], wardrobe: [1600, 600, 2200], toilet: [420, 680, 780], washer: [600, 600, 850], sink: [650, 450, 160], shower: [900, 900, 80] };
+    const sizes = { sideboard: [1600, 400, 850], bed: [1600, 2000, 550], sofa: [2100, 850, 780], chair: [450, 480, 800], 'dining-table': [850, 1700, 750], 'coffee-table': [1000, 550, 420], armchair: [700, 750, 800], plant: [350, 350, 900], rug: [2400, 1800, 15], wardrobe: [1600, 600, 2200], toilet: [420, 680, 780], washer: [600, 600, 850], sink: [650, 450, 160], shower: [900, 900, 80] };
     if (sizes[object.kind]) [object.width, object.depth, object.height] = sizes[object.kind];
   }
   return object;
+}
+
+/** Add the requested cabinet against the bathroom partition, then balance the
+ * untouched original dining set. Edited or locked dining sets stay together. */
+function addDiningSideboard(plan) {
+  if (plan.objects.some(o => o.id === 'dining-sideboard')) return;
+  const cabinet = { ...createObject('furniture', 'sideboard'), id: 'dining-sideboard', name: '餐厅餐边柜', room: '餐厅', color: '#c7ae87', note: '靠卫生间二外墙，柜门朝向餐桌。尺寸与通道净距为图上估算，可按实测调整。' };
+  const wall = plan.objects.find(o => o.id === 'wall-bath2-east' && o.type === 'wall');
+  const reference = plan.meta.referenceTransform || { scaleX: 1, offsetX: 0 };
+  if (wall) {
+    const angle = wall.rotation * Math.PI / 180;
+    const depth = -(wall.depth / 2 + cabinet.depth / 2 + 10) * (wall.mirrorY ? -1 : 1);
+    cabinet.x = wall.x - Math.sin(angle) * depth;
+    cabinet.y = wall.y + Math.cos(angle) * depth;
+    cabinet.rotation = deg(wall.rotation + 180);
+    cabinet.mirrorY = wall.mirrorY;
+  } else {
+    cabinet.x = reference.scaleX * 3700 + reference.offsetX;
+    cabinet.y = 4750;
+    cabinet.rotation = 270;
+    cabinet.mirrorY = reference.scaleX === -1;
+  }
+  const original = [{ id:'dining-table', kind:'dining-table', x:5200, y:4550, width:850, depth:1850, height:750, rotation:0 }];
+  for (let row = 0; row < 3; row++) for (const [side, x, rotation] of [['west',4540,270], ['east',5860,90]]) {
+    original.push({ id:`dining-chair-${side}-${row + 1}`, kind:'chair', x, y:3930 + row * 620, width:430, depth:460, height:800, rotation });
+  }
+  const dining = original.map(seed => ({ object:plan.objects.find(o => o.id === seed.id), expected:{ ...seed, x:reference.scaleX * seed.x + reference.offsetX, rotation:reference.scaleX === -1 ? deg(180-seed.rotation) : seed.rotation, mirrorY:reference.scaleX === -1 } }));
+  const untouched = dining.every(({object,expected}) => object?.type === 'furniture' && !object.locked && ['kind','x','y','width','depth','height','rotation','mirrorY'].every(field => equivalent(field, object[field], expected[field])));
+  if (untouched) for (const {object} of dining) object.x += reference.scaleX * 250;
+  plan.objects.push(cabinet);
 }
 
 /** Apply a published edit once to this reference plan, preserving unrelated edits. */
@@ -84191,7 +84221,8 @@ function applyPublishedPlanEdits(plan) {
   const pending = edits.filter(edit => !applied.includes(edit.key));
   const correctBathroomDoor = !applied.includes(BATH2_SLIDING_EDIT);
   const mirrorPlan = !applied.includes(HORIZONTAL_MIRROR_EDIT);
-  if (!pending.length && !correctBathroomDoor && !mirrorPlan) return false;
+  const addSideboard = !applied.includes(SIDEBOARD_EDIT);
+  if (!pending.length && !correctBathroomDoor && !mirrorPlan && !addSideboard) return false;
   for (const edit of pending) {
     const removedIds = new Set([...edit.walls, ...edit.doors]);
     candidate.objects = candidate.objects.filter(o => !removedIds.has(o.id) && !(edit.removeAttached && ['door', 'window'].includes(o.type) && edit.walls.includes(o.wallId)));
@@ -84214,8 +84245,9 @@ function applyPublishedPlanEdits(plan) {
     }
   }
   if (mirrorPlan) mirrorPlanHorizontally(candidate);
-  candidate.meta.appliedEdits = [...applied, ...pending.map(edit => edit.key), ...(correctBathroomDoor ? [BATH2_SLIDING_EDIT] : []), ...(mirrorPlan ? [HORIZONTAL_MIRROR_EDIT] : [])];
-  Object.assign(plan, candidate);
+  if (addSideboard) addDiningSideboard(candidate);
+  candidate.meta.appliedEdits = [...applied, ...pending.map(edit => edit.key), ...(correctBathroomDoor ? [BATH2_SLIDING_EDIT] : []), ...(mirrorPlan ? [HORIZONTAL_MIRROR_EDIT] : []), ...(addSideboard ? [SIDEBOARD_EDIT] : [])];
+  Object.assign(plan, validatePlan(candidate));
   return true;
 }
 
@@ -84794,6 +84826,29 @@ class PlanScene {
         this.cylinder(g, Math.min(w, d) * .12, .025, w * .12, hh + .015, d * .12, '#ddd9c9');
         this.cylinder(g, Math.min(w, d) * .06, .04, -w * .13, hh + .025, -d * .14, '#828e79');
       }
+    } else if (k === 'sideboard') {
+      // A fixed three-bay cabinet scales as one unit, including at the editor's
+      // minimum dimensions. Hardware stays inside its declared footprint.
+      const cabinet = new THREE.Group();
+      cabinet.scale.set(o.width / 1600, top ? 1 : o.height / 850, o.depth / 400);
+      g.add(cabinet);
+      const wood = color || '#c7ae87', section = 1.6 / 3;
+      if (top) {
+        this.box(cabinet, 1.6, .05, .4, 0, .025, 0, wood, true);
+        // Keep the worktop continuous; only the front reveal marks door bays.
+        this.box(cabinet, 1.6, .012, .382, 0, .056, -.009, '#f3f0e5', true);
+        for (let i = 0; i < 3; i++) this.box(cabinet, section - .004, .012, .018, - .8 + section * (i + .5), .056, .191, wood, true);
+      } else {
+        this.box(cabinet, 1.53, .07, .33, 0, .035, 0, '#64685f', true);
+        this.box(cabinet, 1.588, .756, .368, 0, .448, -.016, wood, true);
+        this.box(cabinet, 1.6, .024, .382, 0, .838, -.009, '#f3f0e5', true);
+        for (let i = 0; i < 3; i++) {
+          const x = -.8 + section * (i + .5);
+          this.box(cabinet, section - .004, .166, .018, x, .741, .177, wood, true);
+          this.box(cabinet, section - .004, .582, .018, x, .361, .177, wood, true);
+          for (const y of [.7325, .576]) this.box(cabinet, .09, .012, .014, x, y, .193, '#64685f');
+        }
+      }
     } else if (k === 'rug') {
       this.roundedBox(g, w, .008, d, 0, .005, 0, color || '#e3dfd0', .04);
       for (const x of [-w / 2 + .065, w / 2 - .065]) this.line(g, [[x, .011, -d / 2 + .06], [x, .011, d / 2 - .06]], '#c2bda9', .5);
@@ -85330,7 +85385,7 @@ const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const icon=n=>`<svg class="icon" aria-hidden="true"><use href="#i-${n}"/></svg>`;
 const TYPES={wall:'墙体',door:'门',window:'窗',furniture:'家具与设备'};
-const KINDS={bed:'床',nightstand:'床头柜',wardrobe:'衣柜',sofa:'沙发','coffee-table':'茶几','dining-table':'餐桌',chair:'餐椅',armchair:'休闲椅',cabinet:'储物柜',counter:'橱柜',sink:'洗手盆',toilet:'坐便器',shower:'淋浴',stove:'灶台',fridge:'冰箱',washer:'洗衣机',rug:'地毯',plant:'绿植',lamp:'台灯','side-table':'边几',bench:'长凳',vanity:'浴室柜',basin:'台盆'};
+const KINDS={bed:'床',nightstand:'床头柜',wardrobe:'衣柜',sofa:'沙发','coffee-table':'茶几','dining-table':'餐桌',chair:'餐椅',armchair:'休闲椅',cabinet:'储物柜',sideboard:'餐边柜',counter:'橱柜',sink:'洗手盆',toilet:'坐便器',shower:'淋浴',stove:'灶台',fridge:'冰箱',washer:'洗衣机',rug:'地毯',plant:'绿植',lamp:'台灯','side-table':'边几',bench:'长凳',vanity:'浴室柜',basin:'台盆'};
 const STORAGE='jusuo.plan.v1';
 let furnitureClipboard=null, furniturePasteCount=0;
 let measurement={start:null,end:null,complete:false,snapLabel:''};
