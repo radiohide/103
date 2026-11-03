@@ -9,11 +9,12 @@ const config = { width: 3.4, depth: 4.7, ceilingHeight: 2.7, soffitHeight: 2.4 }
 const rad = n => n * Math.PI / 180;
 let renderer, scene, camera, room, materials, sun, ambient, skylight, reflection, reflectionCamera, mirror;
 const bronzeReflectors = [];
-let currentView = 'window', photoIndex = 0, toastTimer, activeDrag = null, cameraTransition = null, lastTime = 0, nextReflection = 0;
+let currentView = 'bed', photoIndex = 0, toastTimer, activeDrag = null, cameraTransition = null, lastTime = 0, nextReflection = 0;
 let yaw = 0, pitch = 0, fov = 70, zoomScale = 1;
 const keys = new Set();
 const outdoorGroup = new THREE.Group();
 const views = {
+  bed: { number: '05', name: '床款效果', description: '棉花糖软包 · 奶茶咖床头 · 2.00 × 2.25 m', position: [1.38, 1.72, -2.02], target: [-.53, .58, -.15], fov: 72 },
   window: { number: '01', name: '门口看窗', description: '灰木地板 · 转角采光窗', position: [1.08, 1.52, 1.85], target: [-.23, 1.23, -2.2], fov: 71 },
   back: { number: '02', name: '回望房门', description: '两级吊顶 · 长条风口 · 茶色玻璃', position: [.45, 1.52, -1.8], target: [-.05, 1.30, 2.3], fov: 75 },
   detail: { number: '03', name: '窗边细节', description: '窄边窗框 · 石材窗台 · 斜射日光', position: [.9, 1.5, -.15], target: [-.3, 1.19, -2.35], fov: 74 },
@@ -157,6 +158,27 @@ function updateDoors() {
   $('#bath-open-value').value = +$('#bath-open').value === 0 ? '关闭' : +$('#bath-open').value === 100 ? '打开' : `${$('#bath-open').value}%`;
   nextReflection = performance.now() + 300;
 }
+function insideBed(x, z) {
+  const b = room.bedBounds;
+  return room.bed?.visible && x > b.minX-.12 && x < b.maxX+.12 && z > b.minZ-.12 && z < b.maxZ+.12;
+}
+function updateBed() {
+  if (room.bed) room.bed.visible = $('#bed-visible').checked;
+  moveCameraOutOfBed();
+  nextReflection = performance.now() + 300;
+}
+function moveCameraOutOfBed() {
+  if (currentView !== 'overhead' && insideBed(camera.position.x, camera.position.z)) {
+    const b = room.bedBounds, {x, z} = camera.position;
+    const exits = [[b.maxX+.15,z],[x,b.minZ-.15],[x,b.maxZ+.15]]
+      .filter(([px,pz]) => Math.abs(px)<=1.50 && Math.abs(pz)<=2.12)
+      .sort((a,b) => (a[0]-x)**2+(a[1]-z)**2-((b[0]-x)**2+(b[1]-z)**2));
+    cameraTransition = null;
+    camera.position.x = exits[0][0]; camera.position.z = exits[0][1];
+    setAngles();
+  }
+}
+function cancelCameraTransition() { cameraTransition = null; setAngles(); moveCameraOutOfBed(); }
 function installLights() {
   roomLights.clear();
   const lamp = new THREE.PointLight('#ffe3bb', 4.5, 7, 2); lamp.position.set(0, config.ceilingHeight - .15, -.2); roomLights.add(lamp);
@@ -179,7 +201,7 @@ function rebuild() {
   mirror = null; bronzeReflectors.length = 0;
   scene.remove(room.group); room.dispose(); room = buildRoom(materials, config); scene.add(room.group); installMirror();
   room.group.traverse(o => { if (o.isMesh) for (const m of Array.isArray(o.material) ? o.material : [o.material]) { addContactShading(m); if (m.userData.roomShader) m.userData.roomShader.uniforms.roomHeight.value = top; } });
-  installLights(); updateDoors(); setView(currentView, true);
+  installLights(); updateDoors(); updateBed(); setView(currentView, true);
   $('footer>span:nth-child(2)').textContent = `3.4 × 4.7 m · 吊顶 ${low} m / 中央 ${top} m`;
 }
 function updateReflection() {
@@ -225,12 +247,12 @@ function installMirror() {
 function bindNavigation() {
   const el = renderer.domElement; el.tabIndex = 0;
   el.setAttribute('aria-label', '卧室三维画布：拖动环顾，WASD 移动，滚轮调整视野');
-  el.addEventListener('pointerdown', e => { if (e.button !== 0) return; cameraTransition = null; setAngles(); activeDrag = { id:e.pointerId, x:e.clientX,y:e.clientY }; el.setPointerCapture(e.pointerId); el.focus({preventScroll:true}); });
+  el.addEventListener('pointerdown', e => { if (e.button !== 0) return; cancelCameraTransition(); activeDrag = { id:e.pointerId, x:e.clientX,y:e.clientY }; el.setPointerCapture(e.pointerId); el.focus({preventScroll:true}); });
   el.addEventListener('pointermove', e => { if (!activeDrag || e.pointerId !== activeDrag.id) return; yaw -= (e.clientX-activeDrag.x)*.0035; pitch = THREE.MathUtils.clamp(pitch-(e.clientY-activeDrag.y)*.0035, -1.45, 1.30); activeDrag.x=e.clientX;activeDrag.y=e.clientY; applyLook(); });
   const release = e => { if(activeDrag?.id!==e.pointerId)return;activeDrag=null;try{el.releasePointerCapture(e.pointerId);}catch{} };
   el.addEventListener('pointerup',release);el.addEventListener('pointercancel',release);
-  el.addEventListener('wheel',e=>{e.preventDefault();cameraTransition=null;setAngles();zoomScale=THREE.MathUtils.clamp(zoomScale*Math.exp(e.deltaY*.0007),.65,1.25);camera.fov=THREE.MathUtils.clamp(fov*zoomScale,35,90);camera.updateProjectionMatrix();},{passive:false});
-  window.addEventListener('keydown',e=>{if(['INPUT','TEXTAREA'].includes(document.activeElement?.tagName)||$('#photo-dialog').open)return;const key=e.key.toLowerCase();if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright'].includes(key)){e.preventDefault();keys.add(key);cameraTransition=null;setAngles();}if(e.key==='Escape'&&document.body.classList.contains('immersive')){document.body.classList.remove('immersive');resize();}});
+  el.addEventListener('wheel',e=>{e.preventDefault();cancelCameraTransition();zoomScale=THREE.MathUtils.clamp(zoomScale*Math.exp(e.deltaY*.0007),.65,1.25);camera.fov=THREE.MathUtils.clamp(fov*zoomScale,35,90);camera.updateProjectionMatrix();},{passive:false});
+  window.addEventListener('keydown',e=>{if(['INPUT','TEXTAREA'].includes(document.activeElement?.tagName)||$('#photo-dialog').open)return;const key=e.key.toLowerCase();if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright'].includes(key)){e.preventDefault();keys.add(key);cancelCameraTransition();}if(e.key==='Escape'&&document.body.classList.contains('immersive')){document.body.classList.remove('immersive');resize();}});
   window.addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));window.addEventListener('blur',()=>{keys.clear();activeDrag=null;});
 }
 function frame(time) {
@@ -239,8 +261,10 @@ function frame(time) {
   if(keys.size&&currentView!=='overhead'){
     const forward=Number(keys.has('w')||keys.has('arrowup'))-Number(keys.has('s')||keys.has('arrowdown'));
     const side=Number(keys.has('d')||keys.has('arrowright'))-Number(keys.has('a')||keys.has('arrowleft'));
-    camera.position.x+=(-Math.sin(yaw)*forward+Math.cos(yaw)*side)*dt*.9;camera.position.z+=(-Math.cos(yaw)*forward-Math.sin(yaw)*side)*dt*.9;
-    camera.position.x=THREE.MathUtils.clamp(camera.position.x,-1.50,1.50);camera.position.z=THREE.MathUtils.clamp(camera.position.z,-2.12,2.12);
+    const nextX=THREE.MathUtils.clamp(camera.position.x+(-Math.sin(yaw)*forward+Math.cos(yaw)*side)*dt*.9,-1.50,1.50);
+    const nextZ=THREE.MathUtils.clamp(camera.position.z+(-Math.cos(yaw)*forward-Math.sin(yaw)*side)*dt*.9,-2.12,2.12);
+    if(!insideBed(nextX,camera.position.z))camera.position.x=nextX;
+    if(!insideBed(camera.position.x,nextZ))camera.position.z=nextZ;
   }
   if(nextReflection&&time>nextReflection){nextReflection=0;updateReflection();}
   renderer.render(scene,camera);requestAnimationFrame(frame);
@@ -256,6 +280,7 @@ function bindUI() {
   ['sun-angle','sun-height','brightness','sun-enabled'].forEach(id=>$('#'+id).addEventListener('input',updateSun));
   $('#reset-light').onclick=()=>{$('#sun-angle').value=31;$('#sun-height').value=32;$('#brightness').value=100;$('#sun-enabled').checked=true;updateSun();};
   $('#lights-enabled').onchange=setLights;$('#door-open').oninput=updateDoors;$('#bath-open').oninput=updateDoors;
+  $('#bed-visible').onchange=updateBed;
   $('#ceiling-height').onchange=rebuild;$('#soffit-height').onchange=rebuild;
   $('#immersive').onclick=()=>{document.body.classList.toggle('immersive');resize();};
   $('#references').onclick=()=>{showPhoto(photoIndex);$('#photo-dialog').showModal();};$('#photo-close').onclick=()=>$('#photo-dialog').close();$('#photo-prev').onclick=()=>showPhoto(photoIndex-1);$('#photo-next').onclick=()=>showPhoto(photoIndex+1);
@@ -276,7 +301,7 @@ async function init() {
   for(const x of [-.85,.7]){const fill=new THREE.PointLight('#e4edf8',3.7,11,2);fill.position.set(x,1.65,-2.55);skylight.add(fill);}scene.add(skylight);
   sun=new THREE.DirectionalLight('#fff0d5',3.8);sun.castShadow=true;sun.shadow.mapSize.set(4096,4096);Object.assign(sun.shadow.camera,{left:-5,right:5,top:5,bottom:-5,near:.1,far:35});sun.shadow.bias=-.00012;sun.shadow.normalBias=.012;sun.shadow.radius=2;scene.add(sun,sun.target);
   reflection=new THREE.WebGLCubeRenderTarget(192,{type:THREE.HalfFloatType});reflectionCamera=new THREE.CubeCamera(.08,30,reflection);reflectionCamera.position.set(-.3,1.25,2.10);scene.add(reflectionCamera);
-  await outdoors();installLights();updateSun();updateDoors();bindNavigation();bindUI();resize();setView('window',true);
+  await outdoors();installLights();updateSun();updateDoors();updateBed();bindNavigation();bindUI();resize();setView('bed',true);
   new ResizeObserver(resize).observe($('#scene'));requestAnimationFrame(frame);
   $('#loading').classList.add('loaded');setTimeout(()=>$('#loading').hidden=true,600);
 }

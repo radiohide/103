@@ -1,9 +1,9 @@
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 const modules = [
  ['three/core','vendor/three.core.js'],['three','vendor/three.module.js'],['reflector','vendor/Reflector.js'],
- ['materials','src/materials.js'],['room','src/room.js'],['app','src/app.js'],
+ ['materials','src/materials.js'],['bed','src/bed.js'],['room','src/room.js'],['app','src/app.js'],
 ];
-const map = new Map([['./three.core.js','three/core'],['three','three'],['./Reflector.js','reflector'],['./materials.js','materials'],['./room.js','room']]);
+const map = new Map([['./three.core.js','three/core'],['three','three'],['./Reflector.js','reflector'],['./materials.js','materials'],['./bed.js','bed'],['./room.js','room']]);
 const names = list => list.split(',').map(s=>s.trim()).filter(Boolean).map(s=>{const [local, exported]=s.split(/\s+as\s+/);return {local,exported:exported||local};});
 const target = path => { if (!map.has(path)) throw Error(`Unmapped module ${path}`); return `__M[${JSON.stringify(map.get(path))}]`; };
 function bundle(key, source) {

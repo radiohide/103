@@ -16,7 +16,8 @@
  <aside id="controls">
   <div class="panel-title"><div><span class="eyebrow">光影实景</span><h2>卧室二</h2></div><span class="outline-icon">⌑</span></div>
   <div class="dimension-summary"><div><strong>3.4 × 4.7</strong><small>米 · 含已打通阳台</small></div><span>15.98<small>m²</small></span></div>
-  <section class="control-section"><h3>观察空间 <small>VIEWPOINT</small></h3><div class="presets"><button data-view="window" class="active"><span>01</span>门口看窗</button><button data-view="back"><span>02</span>回望房门</button><button data-view="detail"><span>03</span>窗边细节</button><button data-view="overhead"><span>04</span>俯视空间</button></div></section>
+  <section class="control-section"><h3>观察空间 <small>VIEWPOINT</small></h3><div class="presets"><button data-view="window"><span>01</span>门口看窗</button><button data-view="back"><span>02</span>回望房门</button><button data-view="detail"><span>03</span>窗边细节</button><button data-view="overhead"><span>04</span>俯视空间</button><button data-view="bed" class="active preset-bed"><span>05</span>床款效果</button></div></section>
+  <section class="control-section bed-card"><h3>棉花糖软包床 <small>2.00 × 2.25 m</small></h3><p>奶茶咖床头 · 浅米色床围</p><div class="toggle-row"><label for="bed-visible">显示床</label><input type="checkbox" id="bed-visible" checked></div><small>整床外尺寸 · 卫生间侧留 1.60 m<br>窗边 / 床脚通道各约 1.10 m</small><a href="https://www.nicoroom.com.tw/nicoroom/index.php?action=product_detail&amp;prod_no=P0193100349908" target="_blank" rel="noopener noreferrer">查看床款参考 ↗</a></section>
   <section class="control-section"><h3>日光 <button id="reset-light" class="text-button">还原照片光线 ↺</button></h3>
     <label class="slider-label" for="sun-angle"><span>照射方向</span><output id="sun-angle-value">31°</output></label><input id="sun-angle" type="range" min="-65" max="65" step="1" value="31">
     <label class="slider-label" for="sun-height"><span>太阳高度</span><output id="sun-height-value">32°</output></label><input id="sun-height" type="range" min="12" max="65" step="1" value="32">
@@ -25,7 +26,7 @@
   </section>
   <section class="control-section"><h3>空间细部 <small>DETAILS</small></h3><div class="height-fields"><label>中央顶面<input id="ceiling-height" type="number" step="0.05" min="2.5" max="3.2" value="2.7"><small>m</small></label><label>吊顶底部<input id="soffit-height" type="number" step="0.05" min="2.1" max="2.7" value="2.4"><small>m</small></label></div><label class="slider-label" for="door-open"><span>房门开合</span><output id="door-open-value">65°</output></label><input id="door-open" type="range" min="0" max="90" value="65"><label class="slider-label" for="bath-open"><span>浴室推拉门</span><output id="bath-open-value">打开</output></label><input id="bath-open" type="range" min="0" max="100" value="100"></section>
   <button id="references" class="reference-button"><span class="photo-symbol">▧</span><span><strong>对照实拍照片</strong><small>5 张现场照片</small></span><b>↗</b></button>
-  <p class="footnote">按照片还原空房与日照效果。窗框、门洞和饰面细部按照片估算；阳光为视觉匹配，并非地点与时刻的日照计算。</p>
+  <p class="footnote">房间按实拍重建，床款按商品图建模，软包与床品细部为近似。阳光为视觉匹配，并非地点与时刻的日照计算。</p>
  </aside>
 </main>
 <footer><span><i></i> 独立卧室场景</span><span>3.4 × 4.7 m <b>·</b> 吊顶 2.4 m / 中央 2.7 m</span><span id="render-status">实时光影</span></footer>

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { buildBed } from './bed.js';
 
 /** Photo-guided room geometry. Metres; the window is at negative Z. */
 export function buildRoom(materials, config = {}) {
@@ -244,10 +245,18 @@ export function buildRoom(materials, config = {}) {
   wallPlate('right', 1.03, 1.12, 2, false, false);
   wallPlate('right', 1.02, .26);
 
+  const bed = buildBed();
+  bed.group.position.set(-.525, .007, -.25);
+  bed.group.rotation.y = Math.PI / 2;
+  group.add(bed.group);
+
   return {
     group, ceilingGroup, entryDoor, bathDoor, windowLeaf, spots, bathroomMirror: mirror,
+    bed: bed.group,
+    bedBounds: { minX: -1.65, maxX: .60, minZ: -1.25, maxZ: .75 },
     dimensions: { width: W, depth: D, ceilingHeight: H, soffitHeight: S },
     dispose() {
+      bed.dispose();
       for (const geometry of geometries) geometry.dispose();
       for (const material of ownMaterials) material.dispose();
       group.removeFromParent(); group.clear();
