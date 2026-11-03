@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#efeee8"><title>卧室二 · 光影实景</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='10' fill='%233a4d43'/%3E%3Cpath d='M9 30V12h22v18M20 12v18M9 24h22' stroke='%23fff' fill='none' stroke-width='2'/%3E%3C/svg%3E"><style>/*__STYLE__*/</style></head>
+<body>
+<header><a class="brand" href="#"><span class="brand-icon">◩</span><strong>居所<span>ROOM STUDY</span></strong></a><div class="breadcrumb">空间档案 <i>/</i> 卧室二 <span class="pill">独立场景</span></div><button id="save-image" class="quiet">↓ 保存画面</button></header>
+<main>
+ <section class="viewport" aria-label="卧室三维实景">
+  <div id="scene"></div>
+  <div class="scene-heading"><span class="eyebrow">BEDROOM / 02</span><h1>光，照进房间。</h1><p>实拍空间 · 三维重建</p></div>
+  <div class="scene-topright"><span id="light-state"><i></i> 自然日光</span><button id="immersive" title="隐藏控制面板" aria-label="沉浸查看">⛶</button></div>
+  <div class="view-label"><span id="view-number">01</span><div><strong id="view-name">门口看窗</strong><small id="view-description">灰木地板 · 转角采光窗</small></div></div>
+  <div class="navigation"><span>拖动环顾</span><b>·</b><span>滚轮调整视野</span><b>·</b><span>W A S D 漫游</span><button id="reset-camera" aria-label="回到当前视角">↺</button></div>
+  <div id="loading"><div class="loading-mark">◩</div><strong>正在准备光影与材质</strong><span>载入独立卧室场景…</span></div>
+  <div id="error" role="alert" hidden></div>
+ </section>
+ <aside id="controls">
+  <div class="panel-title"><div><span class="eyebrow">光影实景</span><h2>卧室二</h2></div><span class="outline-icon">⌑</span></div>
+  <div class="dimension-summary"><div><strong>3.4 × 4.7</strong><small>米 · 含已打通阳台</small></div><span>15.98<small>m²</small></span></div>
+  <section class="control-section"><h3>观察空间 <small>VIEWPOINT</small></h3><div class="presets"><button data-view="window" class="active"><span>01</span>门口看窗</button><button data-view="back"><span>02</span>回望房门</button><button data-view="detail"><span>03</span>窗边细节</button><button data-view="overhead"><span>04</span>俯视空间</button></div></section>
+  <section class="control-section"><h3>日光 <button id="reset-light" class="text-button">还原照片光线 ↺</button></h3>
+    <label class="slider-label" for="sun-angle"><span>照射方向</span><output id="sun-angle-value">31°</output></label><input id="sun-angle" type="range" min="-65" max="65" step="1" value="31">
+    <label class="slider-label" for="sun-height"><span>太阳高度</span><output id="sun-height-value">32°</output></label><input id="sun-height" type="range" min="12" max="65" step="1" value="32">
+    <label class="slider-label" for="brightness"><span>画面亮度</span><output id="brightness-value">100%</output></label><input id="brightness" type="range" min="65" max="145" value="100">
+    <div class="toggle-row"><label for="sun-enabled">直射阳光</label><input type="checkbox" id="sun-enabled" checked></div><div class="toggle-row"><label for="lights-enabled">室内灯光</label><input type="checkbox" id="lights-enabled"></div>
+  </section>
+  <section class="control-section"><h3>空间细部 <small>DETAILS</small></h3><div class="height-fields"><label>中央顶面<input id="ceiling-height" type="number" step="0.05" min="2.5" max="3.2" value="2.7"><small>m</small></label><label>吊顶底部<input id="soffit-height" type="number" step="0.05" min="2.1" max="2.7" value="2.4"><small>m</small></label></div><label class="slider-label" for="door-open"><span>房门开合</span><output id="door-open-value">65°</output></label><input id="door-open" type="range" min="0" max="90" value="65"><label class="slider-label" for="bath-open"><span>浴室推拉门</span><output id="bath-open-value">打开</output></label><input id="bath-open" type="range" min="0" max="100" value="100"></section>
+  <button id="references" class="reference-button"><span class="photo-symbol">▧</span><span><strong>对照实拍照片</strong><small>5 张现场照片</small></span><b>↗</b></button>
+  <p class="footnote">按照片还原空房与日照效果。窗框、门洞和饰面细部按照片估算；阳光为视觉匹配，并非地点与时刻的日照计算。</p>
+ </aside>
+</main>
+<footer><span><i></i> 独立卧室场景</span><span>3.4 × 4.7 m <b>·</b> 吊顶 2.4 m / 中央 2.7 m</span><span id="render-status">实时光影</span></footer>
+<dialog id="photo-dialog"><div class="dialog-top"><div><span class="eyebrow">REFERENCE / 实拍参照</span><h2 id="photo-title">照片 1 · 门与吊顶</h2></div><button id="photo-close" aria-label="关闭照片">×</button></div><div class="photo-stage"><img id="reference-image" alt="卧室现场照片"><button id="photo-prev" aria-label="上一张照片">‹</button><button id="photo-next" aria-label="下一张照片">›</button></div><div id="photo-tabs"></div><p>三维尺寸沿用卧室二，含打通的阳台。照片保留原始拍摄视角，用于对照细部。</p></dialog>
+<div id="toast" role="status"></div>
+<script type="module">/*__BUNDLE__*/</script>
+</body></html>
