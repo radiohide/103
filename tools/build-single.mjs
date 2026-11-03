@@ -125,4 +125,10 @@ if (html.includes('./style.css') || html.includes('importmap') || html.includes(
 const outFile = path.resolve(root, process.argv[2] || 'dist-single/index.html');
 await mkdir(path.dirname(outFile), { recursive: true });
 await writeFile(outFile, html, 'utf8');
+// Keep the default portable artifact while staging the same single file in a
+// static directory supported by Sites. Explicit custom outputs stay isolated.
+if (!process.argv[2]) {
+  await mkdir(path.join(root, 'out'), { recursive: true });
+  await writeFile(path.join(root, 'out/index.html'), html, 'utf8');
+}
 console.log(`${path.relative(root, outFile).replace(/\\/g, '/')}  ${(Buffer.byteLength(html) / 1048576).toFixed(2)} MiB`);

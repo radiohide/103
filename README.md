@@ -18,7 +18,7 @@ npm start
 npm run build
 ```
 
-生成 `dist-single/index.html`：整站（HTML、CSS、全部脚本、Three.js 与参考底图）都在一个文件里。可直接双击打开——`file://` 下模块脚本与底图均已内联，localStorage 自动保存和 JSON/PNG 导出都能用；也可丢到任意静态托管，`.openai/hosting.json` 即指向 `dist-single`。
+生成 `dist-single/index.html`：整站（HTML、CSS、全部脚本、Three.js 与参考底图）都在一个文件里。可直接双击打开——`file://` 下模块脚本与底图均已内联，localStorage 自动保存和 JSON/PNG 导出都能用；也可丢到任意静态托管，构建时也会把相同单文件放入 `out/index.html`，`.openai/hosting.json` 指向平台支持的 `out` 目录。
 
 改代码请编辑 `dist/` 下的多文件源码（`dist/index.html`、`dist/style.css`、`dist/src/*.js`、`dist/vendor/`、`dist/assets/`），改完重新 `npm run build`。`dist/` 保留为可读、可调试的源版本，不作为线上产物。
 
@@ -64,4 +64,4 @@ npm test
 - `tools/build-single.mjs`：单文件打包器（ES 模块转 IIFE、CSS 内联、底图转 data URL），产物 `dist-single/index.html`。
 - `server.mjs`：托管 `dist-single/` 的静态服务器。
 
-开发时安装依赖使用 `npm install`；部署只需 `dist-single/index.html` 这一个文件，不需要 node_modules 和 `dist/`。
+开发时安装依赖使用 `npm install`；部署只需单个 `index.html` 文件（可携带产物为 `dist-single/index.html`，Sites 发布副本为 `out/index.html`），不需要 node_modules 和 `dist/`。
