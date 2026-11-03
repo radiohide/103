@@ -1,0 +1,68 @@
+const planCanvas = document.getElementById('plan-canvas');
+const pc = planCanvas.getContext('2d');
+planCanvas.width=1200;planCanvas.height=1440;
+const scale=220, ox=155, oy=235;
+const px=x=>ox+(x+1.7)*scale, py=z=>oy+(2.35-z)*scale;
+const text=(s,x,y,size=24,color='#333d36',align='center')=>{pc.font=`${size}px "Microsoft YaHei",sans-serif`;pc.fillStyle=color;pc.textAlign=align;pc.fillText(s,x,y);};
+const line=(x,y,x2,y2,color='#37453c',width=2,dash=[])=>{pc.strokeStyle=color;pc.lineWidth=width;pc.setLineDash(dash);pc.beginPath();pc.moveTo(x,y);pc.lineTo(x2,y2);pc.stroke();pc.setLineDash([]);};
+const rect=(x,z,w,d,color,stroke='#b8b9ac')=>{pc.fillStyle=color;pc.fillRect(px(x),py(z+d),w*scale,d*scale);if(stroke){pc.strokeStyle=stroke;pc.lineWidth=2;pc.strokeRect(px(x),py(z+d),w*scale,d*scale);}};
+const dim=(x,y,x2,y2,label,offset=0)=>{line(x,y,x2,y2,'#798577',1.5);if(Math.abs(y-y2)<2){line(x,y-6,x,y+6,'#798577');line(x2,y-6,x2,y+6,'#798577');text(label,(x+x2)/2,y-12+offset,22);}else{line(x-6,y,x+6,y,'#798577');line(x2-6,y2,x2+6,y2,'#798577');pc.save();pc.translate(x-13+offset,(y+y2)/2);pc.rotate(-Math.PI/2);text(label,0,0,22);pc.restore();}};
+function drawWardrobePlan(){
+pc.fillStyle='#f8f6f1';pc.fillRect(0,0,1200,1440);
+text('卧室二 · L 形组合柜',155,62,34,'#293c32','left');
+text('按现有模型设计 / 单位：cm / 方案示意',155,105,22,'#70796e','left');
+rect(-1.7,-2.35,3.4,4.7,'#efeee8',null);
+// Existing bathroom opening: left fixed panel; right clear opening.
+line(px(-1.7),py(2.35),px(-1.1),py(2.35),'#3d473f',13);
+line(px(.6),py(2.35),px(1.7),py(2.35),'#3d473f',13);
+line(px(-1.7),py(-2.35),px(-1.7),py(2.35),'#3d473f',13);
+line(px(1.7),py(-2.35),px(1.7),py(1.275),'#3d473f',13);
+line(px(1.7),py(2.225),px(1.7),py(2.35),'#3d473f',13);
+line(px(-1.1),py(2.35),px(-.225),py(2.35),'#aa9b7a',10);
+text('卫生间',px(-.25),py(2.35)-47,28);
+text('固定玻璃',px(-.6625),py(2.35)-20,19,'#82755e');
+text('推拉门开口 ≈80',px(.185),py(2.35)-20,19,'#4d6c5a');
+text('房门',px(1.7)+65,py(1.75),22);
+line(px(1.7),py(2.225),px(.80),py(2.225),'#9a9f93',3);
+pc.strokeStyle='#bfc3b9';pc.lineWidth=1.5;pc.setLineDash([5,5]);pc.beginPath();pc.arc(px(1.7),py(2.225),.90*scale,Math.PI/2,Math.PI);pc.stroke();pc.setLineDash([]);
+// L cabinetry and compact interior.
+rect(-1.7,.85,1.5,.60,'#c8b89c');
+rect(-1.7,1.45,.55,.85,'#c8b89c');
+rect(-1.15,1.45,.95,.85,'#e3e9df','#b8c2b1');
+rect(-1.7,.85,.55,.60,'#b4a68e');
+text('盲角',px(-1.425),py(1.13),22);
+text('主挂衣柜',px(-.68),py(1.11),24);
+text('深60 / 双折门',px(-.68),py(.95),19);
+pc.save();pc.translate(px(-1.425),py(1.875));pc.rotate(-Math.PI/2);text('叠衣柜 · 深55',0,0,21);pc.restore();
+text('取衣区',px(-.675),py(1.96),24);
+text('95 × 85',px(-.675),py(1.78),25);
+text('局部约83',px(-.675),py(1.59),18,'#687666');
+line(px(-1.15),py(1.45),px(-.20),py(1.45),'#67573f',5);
+line(px(-1.15),py(1.45),px(-1.15),py(2.30),'#67573f',5);
+for(let n=1;n<4;n++)line(px(-1.15+.95*n/4),py(1.45)-8,px(-1.15+.95*n/4),py(1.45)+8,'#67573f',2);
+line(px(-1.15)-8,py(1.875),px(-1.15)+8,py(1.875),'#67573f',2);
+text('敞开入口',px(.40),py(1.78),22,'#4d6c5a');
+line(px(.83),py(1.64),px(-.15),py(1.64),'#5b8066',4);
+line(px(-.15),py(1.64),px(-.02),py(1.70),'#5b8066',4);line(px(-.15),py(1.64),px(-.02),py(1.58),'#5b8066',4);
+// Bed: 2.25 along X, 2 along Z, with head on the left.
+rect(-1.65,-1.25,2.25,2,'#eee8db','#aaa99b');
+rect(-1.65,-1.25,.15,2,'#baa189','#a38d73');
+rect(-1.43,-.10,.43,.69,'#fbf9f3','#c8c5b7');rect(-1.43,-1.02,.43,.69,'#fbf9f3','#c8c5b7');
+text('床 · 200 × 225',px(-.525),py(-.30),28);
+text('床头',px(-1.575),py(-.25),18,'#554a3f');
+text('柜背朝床',px(-.675),py(.85)+25,20,'#70634d');
+dim(px(-1.7),py(2.35)-85,px(-.2),py(2.35)-85,'150');
+dim(px(-1.7)-48,py(.85),px(-1.7)-48,py(2.30),'145');
+dim(px(.66),py(.75),px(.66),py(.85),'10',48);
+text('缝隙，不作床侧通道',px(.7),py(.70)+26,19,'#8a694b','left');
+dim(px(.6),py(-.55),px(1.7),py(-.55),'床脚通道约110');
+dim(px(-.40),py(-2.35),px(-.40),py(-1.25),'窗侧约110');
+line(px(-1.7),py(-2.35),px(1.25),py(-2.35),'#7c989b',6);line(px(-1.7),py(-2.35)+8,px(1.25),py(-2.35)+8,'#7c989b',2);
+text('转角采光窗',px(-.25),py(-2.35)+46,22,'#607e80');
+text('柜高230 · 顶部留10 · 暖白哑光＋浅木色拉手',155,1360,24,'#465548','left');
+text('柜顶风口、门框和插座位置需现场复核',155,1400,21,'#7f857c','left');
+}
+drawWardrobePlan();
+document.getElementById('show-plan').onclick=()=>document.getElementById('plan-dialog').showModal();
+document.getElementById('close-plan').onclick=()=>document.getElementById('plan-dialog').close();
+document.getElementById('save-plan').onclick=()=>{planCanvas.toBlob(blob=>{const a=document.createElement('a'),u=URL.createObjectURL(blob);a.href=u;a.download='卧室二-L形衣柜尺寸示意.png';a.click();setTimeout(()=>URL.revokeObjectURL(u),60000);});};
