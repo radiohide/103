@@ -1,0 +1,68 @@
+const pCanvas=document.getElementById('plan-canvas'),g=pCanvas.getContext('2d');pCanvas.width=1400;pCanvas.height=1240;
+const sc=220, ox=150,oy=200;
+const u=z=>ox+(2.35-z)*sc,v=x=>oy+(1.7-x)*sc;
+const txt=(s,x,y,size=23,col='#36453b',align='center')=>{g.font=`${size}px "Microsoft YaHei",sans-serif`;g.fillStyle=col;g.textAlign=align;g.fillText(s,x,y);};
+const seg=(x,y,x2,y2,col='#58675b',w=2,dash=[])=>{g.strokeStyle=col;g.lineWidth=w;g.setLineDash(dash);g.beginPath();g.moveTo(x,y);g.lineTo(x2,y2);g.stroke();g.setLineDash([]);};
+const block=(x0,x1,z0,z1,col,stroke='#b5b5a5')=>{g.fillStyle=col;g.fillRect(u(z1),v(x1),(z1-z0)*sc,(x1-x0)*sc);if(stroke){g.strokeStyle=stroke;g.lineWidth=2;g.strokeRect(u(z1),v(x1),(z1-z0)*sc,(x1-x0)*sc);}};
+const dim=(x,y,x2,y2,s)=>{seg(x,y,x2,y2,'#809080',1.5);if(y===y2){seg(x,y-7,x,y+7);seg(x2,y-7,x2,y+7);txt(s,(x+x2)/2,y-12,22);}else{seg(x-7,y,x+7,y);seg(x2-7,y2,x2+7,y2);g.save();g.translate(x-12,(y+y2)/2);g.rotate(-Math.PI/2);txt(s,0,0,22);g.restore();}};
+g.fillStyle='#f8f6f1';g.fillRect(0,0,1400,1240);
+txt('衣帽区侧面封闭 · 房门开启校核',150,65,34,'#263c30','left');
+txt('建议净尺寸235×122.5cm ≈2.88㎡（含柜体）/ 侧墙厚5cm / 房门开至90°',150,108,22,'#727e72','left');
+block(-1.7,1.7,-2.35,2.35,'#efeee8',null);
+block(-1.7,.65,1.125,2.35,'#e7ecdf',null);
+const hingeU=u(2.212),hingeV=v(1.682),sweepR=Math.hypot(.920,.0205)*sc;
+g.fillStyle='#e9ddc8';g.beginPath();g.moveTo(hingeU,hingeV);g.arc(hingeU,hingeV,sweepR,0,Math.PI/2);g.closePath();g.fill();
+// Existing shell and doorway; bathroom is left, window is right.
+seg(u(2.35),v(-1.7),u(-2.35),v(-1.7),'#465348',12);
+seg(u(2.35),v(1.7),u(2.225),v(1.7),'#465348',12);
+seg(u(1.275),v(1.7),u(-2.35),v(1.7),'#465348',12);
+seg(u(2.35),v(-1.7),u(2.35),v(-1.1),'#465348',12);
+seg(u(2.35),v(.6),u(2.35),v(1.7),'#465348',12);
+seg(u(2.35),v(-1.1),u(2.35),v(-.225),'#a99a7d',9);
+txt('卫生间',55,v(.18),24);
+txt('卧室房门 · 90°',u(1.75),v(1.7)-28,23);
+block(.762,1.682,2.1915,2.2325,'#ad8f63','#7d6a4e');
+g.strokeStyle='#bba781';g.lineWidth=2;g.setLineDash([5,6]);g.beginPath();g.arc(hingeU,hingeV,sweepR,0,Math.PI/2);g.stroke();g.setLineDash([]);
+// Opposing storage: rear clearances preserve the turn into the real bath opening.
+block(-1.7,-1.1,1.17,2.26,'#ccb493');
+block(.30,.65,1.17,1.65,'#ccb493');
+block(-1.1,.30,1.17,2.26,'#e4eadd',null);
+txt('主挂衣柜 109 × 60',u(1.715),v(-1.39),24);
+txt('挂衣＋抽屉',u(1.715),v(-1.56),19,'#726246');
+txt('浅柜',u(1.41),v(.49),22);txt('48×35',u(1.41),v(.36),18);
+seg(u(1.17),v(-1.1),u(2.26),v(-1.1),'#8b7251',4);seg(u(1.17),v(.30),u(1.65),v(.30),'#8b7251',4);
+txt('取衣区',u(1.71),v(-.50),26);txt('两柜之间约140',u(1.71),v(-.70),21);
+block(.65,.70,1.075,2.35,'#9daa99','#64775e');
+txt('侧墙接后墙',u(1.40),v(.70)-24,21,'#4f684d');
+seg(u(2.212),v(.7617716),u(2.212),v(.70),'#936d3b',3);
+seg(u(2.212)+8,(v(.7617716)+v(.70))/2,370,320,'#936d3b',1.7);
+txt('最小余量约6.2cm',370,303,22,'#866337');
+// Front partition with two real sliding leaves shown in their parked position.
+block(-1.7,-.8,1.075,1.125,'#d2d2c6');block(.1,.70,1.075,1.125,'#d2d2c6');
+block(-1.30,-.82,1.0025,1.0375,'#fcfaf3','#717b6f');block(.12,.60,1.0025,1.0375,'#fcfaf3','#717b6f');
+seg(u(1.005),v(-1.40),u(1.005),v(.70),'#38443b',3);
+dim(u(.90),v(-.80),u(.90),v(.10),'');
+txt('门洞90',u(.60),v(-.55),22);
+txt('双扇白色移门',u(.90)+25,v(-1.13),20,'#5f6b60','left');
+// Bed moved 550 mm towards the window, dimensions preserved.
+block(-1.65,.60,-1.80,.20,'#eee5d5','#aaa89a');block(-1.65,-1.50,-1.80,.20,'#b89e81','#9d866e');
+block(-1.42,-.99,-.66,.02,'#fbf9f2','#c6c0af');block(-1.42,-.99,-1.60,-.92,'#fbf9f2','#c6c0af');
+txt('床 200 × 225',u(-.80),v(-.37),29);txt('向窗移动55',u(-.80),v(-.58),22,'#866d4b');
+dim(u(.20),v(.80),u(1.0025),v(.80),'门前约80');
+dim(u(-1.8),v(-.20),u(-2.35),v(-.20),'窗侧55');
+dim(u(-.80),v(.60),u(-.80),v(1.70),'床脚约110');
+dim(125,v(-1.70),125,v(.65),'净宽235');
+dim(u(2.35),998,u(1.125),998,'净深122.5');
+txt('房门通路约100',u(.25),v(1.10),21,'#63765e');
+// Main route from foot-side aisle to wardrobe then bathroom.
+g.strokeStyle='#69886b';g.lineWidth=6;g.lineJoin='round';g.beginPath();g.moveTo(u(.58),v(.48));g.lineTo(u(.58),v(-.32));g.lineTo(u(1.87),v(-.32));g.lineTo(u(2.10),v(.18));g.lineTo(u(2.34),v(.18));g.stroke();
+seg(u(2.34),v(.18),u(2.24),v(.25),'#69886b',6);seg(u(2.34),v(.18),u(2.24),v(.11),'#69886b',6);
+txt('进入衣帽区',u(.57)+16,v(.65),20,'#567951','left');
+seg(u(-2.35),v(-1.7),u(-2.35),v(1.25),'#809b9e',7);seg(u(-2.35)+7,v(-1.7),u(-2.35)+7,v(1.25),'#809b9e',2);
+g.save();g.translate(u(-2.35)+44,v(-.25));g.rotate(-Math.PI/2);txt('转角采光窗',0,0,24,'#65858a');g.restore();
+txt('几何碰撞上限：净宽约241.2cm；留5cm开门余量：净宽最多约236.2cm。',150,1080,23,'#455b48','left');
+txt('隔墙外包240×127.5cm（移门另向外突出）；移门最前面到床仍约80cm。',150,1130,23,'#455b48','left');
+txt('按现有模型、50mm隔断和0–90°开门计算，含把手；施工前复核实际门扇与铰轴位置。',150,1180,21,'#768172','left');
+document.getElementById('show-plan').onclick=()=>document.getElementById('plan-dialog').showModal();
+document.getElementById('close-plan').onclick=()=>document.getElementById('plan-dialog').close();
+document.getElementById('save-plan').onclick=()=>pCanvas.toBlob(blob=>{const a=document.createElement('a'),url=URL.createObjectURL(blob);a.href=url;a.download='卧室二-封闭衣帽区开门尺寸图.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),60000);});

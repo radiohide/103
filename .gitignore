@@ -1,3 +1,8 @@
 node_modules/
-qa/
+qa/*
+!qa/wardrobe-enclosed-concept/
+qa/wardrobe-enclosed-concept/app.js
+qa/wardrobe-enclosed-concept/room.js
+qa/wardrobe-enclosed-concept/page.html
+qa/wardrobe-enclosed-concept/build-bundle.mjs
 *.log

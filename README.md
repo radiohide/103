@@ -1,5 +1,25 @@
 # 卧室二 · 光影实景
 
+## 当前分支：封闭双排衣帽区 · 齐平吊顶
+
+本分支保存独立设计方案，入口为 `qa/wardrobe-enclosed-concept/index.html`，可直接双击打开。
+
+墙内净尺寸 2.35 × 1.225 m，约 2.88㎡（含柜体）。侧墙封闭，正面双移门；衣帽区吊顶 2.4 m 与前墙及风口齐平，中央顶 2.7 m。床向窗移动 55 cm，房门与侧墙最小余量约 6.2 cm。
+
+尺寸为方案估算，施工前需实测复核。方案源码、完整单文件及效果图一并保存，原户型 main 分支未改。
+
+重新生成：
+
+```text
+node qa/wardrobe-enclosed-concept/build-concept.mjs
+```
+
+构建依赖本仓库根目录已有的 src、assets、vendor 和 build.mjs；app.js、room.js、page.html、build-bundle.mjs 为自动生成文件。原始无衣帽间卧室仍保存在 dist/index.html。
+
+GitHub 分支：radiohide/103 / bedroom-two-double-enclosed
+
+
+
 独立于 `floorplan-studio` 的 Three.js 室内场景。不会读写旧项目的数据、代码或浏览器存储。
 
 尺寸采用用户确认的卧室二与已打通阳台：3.4 × 4.7 m；四周吊顶底 2.4 m，中央顶面 2.7 m。按所提供的五张照片重建房间，并加入指定的床款。
@@ -35,4 +55,4 @@ npm start
 
 预览：`http://127.0.0.1:4319/`。源码在 `src/`；`assets/` 保存原始参考照片；`vendor/` 为 Three.js 0.187.0 及 Reflector，MIT 许可保留在源码中。`build.mjs` 生成完全自包含的 HTML。
 
-这是单独的目录和 Sites 项目，未连接或修改旧 GitHub 仓库。
+这是独立卧室的设计版本备份，与原户型 main 分支分开保存。

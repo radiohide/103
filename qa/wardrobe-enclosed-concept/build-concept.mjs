@@ -1,0 +1,76 @@
+import { readFile, writeFile } from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+const here = path.dirname(fileURLToPath(import.meta.url));
+const root = path.resolve(here, '../..');
+process.chdir(root);
+let build = await readFile('build.mjs', 'utf8');
+build = build.replace("const map = new Map([", "const map = new Map([['./wardrobe.js','wardrobe'],");
+build = build.replace("['materials','src/materials.js'],", "['materials','src/materials.js'],['wardrobe','qa/wardrobe-enclosed-concept/wardrobe.js'],");
+build = build.replace("['room','src/room.js'],['app','src/app.js']", "['room','qa/wardrobe-enclosed-concept/room.js'],['app','qa/wardrobe-enclosed-concept/app.js']");
+build = build.replace("readFile('src/index.html','utf8')", "readFile('qa/wardrobe-enclosed-concept/page.html','utf8')");
+build = build.replace("await writeFile('dist/index.html',page)", "await writeFile('qa/wardrobe-enclosed-concept/index.html',page)");
+let room = await readFile('src/room.js','utf8');
+room = room.replace("import { buildBed } from './bed.js';", "import { buildBed } from './bed.js';\nimport { buildWardrobe, DEFAULT_DIMENSIONS } from './wardrobe.js';");
+room = room.replace('  const bed = buildBed();', '  const wardrobe = buildWardrobe({ wallHeight: S, centralCeilingHeight: H }); group.add(wardrobe.group);\n  const bed = buildBed();');
+room = room.replace('bed.group.position.set(-.525, .007, -.25)', 'bed.group.position.set(-.525, .007, -.80)');
+room = room.replace('minZ: -1.25, maxZ: .75', 'minZ: -1.80, maxZ: .20');
+room = room.replace('bed: bed.group,', 'wardrobe, bed: bed.group,');
+room = room.replace('      bed.dispose();', '      wardrobe.dispose(); bed.dispose();');
+// Extend the rear bulkhead to the actual partition face, leaving the central
+// ceiling at H. Recess the AC grille into a real opening so its frame is flush.
+room = room.replace('rearBand = .65;', 'rearBand = back - (DEFAULT_DIMENSIONS.wallZ - DEFAULT_DIMENSIONS.wallThickness / 2);');
+const bulkhead = "  box(W - sideBand * 2, soffitThickness, rearBand, 0, (H + S) / 2, back - rearBand / 2, materials.ceiling, '门侧空调吊顶', ceilingGroup);";
+if (!room.includes(bulkhead)) throw new Error('Rear ceiling source changed');
+room = room.replace(bulkhead, `  const fasciaZ = back - rearBand, recess = .035;
+  const ventW = W - .59, ventH = Math.min(.135, soffitThickness * .54), ventY = S + soffitThickness * .53;
+  const openingHalfWidth = ventW / 2 + .008, openingBottom = ventY - ventH / 2 - .008, openingTop = ventY + ventH / 2 + .008;
+  box(W - sideBand * 2, soffitThickness, rearBand - recess, 0, (H + S) / 2, fasciaZ + recess + (rearBand - recess) / 2, materials.ceiling, '衣帽区平顶 · 底标高随吊顶', ceilingGroup);
+  box(W - sideBand * 2, openingBottom - S, recess, 0, (S + openingBottom) / 2, fasciaZ + recess / 2, materials.ceiling, '齐平风口下方封板', ceilingGroup);
+  box(W - sideBand * 2, H - openingTop, recess, 0, (openingTop + H) / 2, fasciaZ + recess / 2, materials.ceiling, '齐平风口上方封板', ceilingGroup);
+  const cheekWidth = W / 2 - sideBand - openingHalfWidth;
+  for (const sign of [-1, 1]) box(cheekWidth, openingTop - openingBottom, recess, sign * (openingHalfWidth + cheekWidth / 2), ventY, fasciaZ + recess / 2, materials.ceiling, '齐平风口两端封板', ceilingGroup);
+  ceilingGroup.userData.alignment = { frontZ: fasciaZ, undersideY: S, centralY: H, rearDepth: rearBand, grilleFrontZ: fasciaZ };`);
+room = room.replace('for (const z of [front + frontBand + .012, back - rearBand - .012])', 'for (const z of [front + frontBand + .012])');
+const grilleStart = room.indexOf('  // Back-wall long AC grille');
+const grilleEnd = room.indexOf('  // Service hatch seam', grilleStart);
+if (grilleStart < 0 || grilleEnd < 0) throw new Error('AC grille source changed');
+room = room.slice(0, grilleStart) + `  // The dark recess is behind the front plane; neither louvres nor frame protrude.
+  box(ventW, ventH, .004, 0, ventY, fasciaZ + .030, gasket, '内嵌空调风口深色背板', ceilingGroup);
+  for (let n = 0; n < 8; n++) {
+    const y = ventY - ventH / 2 + .005 + n * (ventH - .01) / 7;
+    box(ventW - .012, .006, .018, 0, y, fasciaZ + .012, materials.ceiling, '内嵌空调横向百叶', ceilingGroup);
+  }
+  for (const x of [-ventW / 2 - .004, ventW / 2 + .004]) box(.008, ventH + .016, .008, x, ventY, fasciaZ + .004, materials.ceiling, '风口齐平竖边框', ceilingGroup);
+  for (const y of [ventY - ventH / 2 - .004, ventY + ventH / 2 + .004]) box(ventW, .008, .008, 0, y, fasciaZ + .004, materials.ceiling, '风口齐平横边框', ceilingGroup);
+` + room.slice(grilleEnd);
+await writeFile(path.join(here,'room.js'),room);
+let app = await readFile('src/app.js','utf8');
+app = app.replace(/  bed: \{[^\n]+/, "  bed: { number: '01', name: '移门与床位', description: '吊顶与前墙齐平 · 风口内嵌 · 中央顶2.7m', position: [1.40,1.65,-1.90], target: [-.55,1.32,.58], fov: 75 },");
+app = app.replace(/  back: \{[^\n]+/, "  back: { number: '02', name: '衣帽区内部', description: '原木挂衣柜 · 对面浅柜 · 通向卫生间', position: [.35,1.45,1.98], target: [-1.30,1.15,1.72], fov: 75 },");
+app = app.replace(/  overhead: \{[^\n]+/, "  overhead: { number: '03', name: '整体布局', description: '床向窗移55cm · 移门前约80cm · 门洞90cm', position: [3.0,8.5,-4.0], target: [-.25,.3,.5], fov: 40 },");
+app = app.replace(/  detail: \{[^\n]+/, "  detail: { number: '04', name: '侧墙与房门', description: '侧面连续封闭 · 房门90° · 最小余量约6.2cm', position: [1.38,1.68,.22], target: [.97,1.10,2.13], fov: 73 },");
+app = app.replace('function updateDoors() {', "function updateDoors() {\n  room.wardrobe?.setOpen(+$('#wardrobe-open').value/100);\n  $('#wardrobe-open-value').value=$('#wardrobe-open').value+'%';");
+app = app.replace("$('#bed-visible').onchange=updateBed;", "$('#bed-visible').onchange=updateBed;$('#wardrobe-open').oninput=updateDoors;");
+app = app.replace('low < 2.1', 'low < 2.4');
+app = app.replace("toast('中央顶面需比吊顶高至少 0.1 m')", "toast('衣帽区吊顶不低于2.4m，中央顶面至少再高0.1m')");
+app = app.replace("materials.lightDiffuser.emissiveIntensity = roomLights.visible ? 1.8 : 0;", "materials.lightDiffuser.emissiveIntensity = roomLights.visible ? 1.8 : 0;");
+// This copy is for reviewing a proposal. The production source is not edited.
+app += '\n' + await readFile(path.join(here,'plan.js'),'utf8');
+await writeFile(path.join(here,'app.js'),app);
+let html = await readFile('src/index.html','utf8');
+html=html.replace('<title>卧室二 · 光影实景</title>','<title>卧室二 · 侧墙封闭与开门校核</title>');
+html=html.replace('光，照进房间。','一道门，收起日常。').replace('实拍空间 · 三维重建','双移门衣帽区 · 方案预览');
+html=html.replace(/<div class="presets">[\s\S]*?<\/div><\/section>/, '<div class="presets"><button data-view="bed" class="active"><span>01</span>移门与床位</button><button data-view="back"><span>02</span>衣帽区内部</button><button data-view="overhead"><span>03</span>整体布局</button><button data-view="detail"><span>04</span>侧墙与房门</button><button id="show-plan"><span>05</span>尺寸与开门图</button></div></section>');
+html=html.replace('软包床头 · 平整床框 <small>2.00 × 2.25 m</small>','双排衣帽区 <small>设计示意</small>').replace('奶茶咖皮革床头 · 浅米色硬质床框','白色框门 · 黑色轨道 · 原木柜内');
+html=html.replace('整床外尺寸 · 卫生间侧留 1.60 m<br>窗边 / 床脚通道各约 1.10 m','墙内净尺寸 235×122.5cm ≈2.88㎡<br>侧墙厚5cm · 房门最小余量约6.2cm<br>房门外侧通道100cm · 移门前约80cm<br>净面积含柜体占地');
+html=html.replace('<section class="control-section"><h3>日光', '<section class="control-section"><h3>衣帽区移门</h3><label class="slider-label" for="wardrobe-open"><span>双扇移门开合</span><output id="wardrobe-open-value">100%</output></label><input id="wardrobe-open" type="range" min="0" max="100" value="100"></section><section class="control-section"><h3>日光');
+html=html.replace('<input type="checkbox" id="lights-enabled">','<input type="checkbox" id="lights-enabled" checked>');
+html=html.replace('id="door-open-value">65°','id="door-open-value">90°').replace('id="door-open" type="range" min="0" max="90" value="65"','id="door-open" type="range" min="0" max="90" value="90"');
+html=html.replace('id="soffit-height" type="number" step="0.05" min="2.1"', 'id="soffit-height" type="number" step="0.05" min="2.4"');
+html=html.replace('房间按实拍重建，床款按商品图建模，软包与床品细部为近似。阳光为视觉匹配，并非地点与时刻的日照计算。','衣帽区上方吊顶向前延伸62.5cm，与前墙齐平；风口内嵌同一前沿。衣帽区顶高2.4m，中央仍2.7m。房门开启余量沿用前版，施工前需实测门扇和铰轴。独立示意，线上卧室未改。');
+html=html.replace('<script type="module">','<dialog id="plan-dialog"><button id="close-plan">关闭</button><button id="save-plan">保存尺寸图</button><canvas id="plan-canvas" style="width:100%;height:auto"></canvas></dialog><script type="module">');
+html=html.replace('/*__STYLE__*/', '/*__STYLE__*/\n#plan-dialog{width:min(940px,94vw);max-height:94vh;padding:16px;border:0;border-radius:12px;background:#f8f6f1}#plan-dialog button{padding:10px 16px;margin:0 8px 12px 0;border:1px solid #ddd;background:white;border-radius:6px}');
+await writeFile(path.join(here,'page.html'),html);
+await writeFile(path.join(here,'build-bundle.mjs'),build);
+await import('./build-bundle.mjs?'+Date.now());
