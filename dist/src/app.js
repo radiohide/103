@@ -99,6 +99,7 @@ function updateMeasurement(state){
  updateStatus();
 }
 function finishPendingDrag(){
+ scene?.finishDrag();
  if(!dragBefore)return;
  const before=dragBefore;dragBefore=null;remember(before);render();
 }
@@ -115,7 +116,7 @@ function setTool(next){
  tool=next;scene?.setTool(tool);
  for(const name of ['move','rotate','measure']){$('#'+name+'-btn').classList.toggle('active',tool===name);$('#'+name+'-btn').setAttribute('aria-pressed',String(tool===name));}
  $('#measurement-panel').hidden=tool!=='measure';$('.workspace').classList.toggle('measuring',tool==='measure');
- $('#snap-detail').textContent=tool==='measure'?'端点 / 边缘':'50 mm';updateModeHint();updateStatus();
+ $('#snap-detail').textContent=tool==='measure'?'端点 / 边缘':tool==='rotate'?'15°':'网格 / 墙面';updateModeHint();updateStatus();
  if(tool==='rotate'&&selectedObject()?.wallId)toast('门窗方向跟随墙体，可在属性中翻转开启方向。');
 }
 function download(data,name,mime){const a=document.createElement('a');let blob;if(typeof data==='string'&&data.startsWith('data:')){const encoded=data.slice(data.indexOf(',')+1),bytes=Uint8Array.from(atob(encoded),c=>c.charCodeAt(0));blob=new Blob([bytes],{type:mime});}else blob=new Blob([data],{type:mime});const url=URL.createObjectURL(blob);a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);}
@@ -171,6 +172,10 @@ document.addEventListener('keydown',e=>{
  const active=document.activeElement;
  if(['INPUT','TEXTAREA','SELECT'].includes(active?.tagName)||active?.isContentEditable||document.querySelector('dialog[open]'))return;
  const key=e.key.toLowerCase(),command=e.ctrlKey||e.metaKey;
+ if(scene?.drag){
+  if(e.key==='Escape'){e.preventDefault();scene.finishDrag(false);return;}
+  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Delete','Backspace'].includes(e.key)||(command&&['z','y','d','v'].includes(key)))finishPendingDrag();
+ }
  if(command&&!e.altKey&&!e.shiftKey&&(key==='c'||key==='v')){
   if(key==='c'&&window.getSelection()?.toString())return;
   e.preventDefault();if(e.repeat)return;
@@ -194,6 +199,6 @@ document.addEventListener('keydown',e=>{
   mutate(()=>updateObject(plan,object.id,{x:object.x+(e.key==='ArrowRight'?step:e.key==='ArrowLeft'?-step:0),y:object.y+(e.key==='ArrowDown'?step:e.key==='ArrowUp'?-step:0)},{linked,anchor}));
  }
 });
-try{scene=new PlanScene($('#scene'),{onSelect:select,onMeasurementChange:updateMeasurement,onTransform(id,patch,phase){if(phase==='start'){dragBefore=snapshot();dragFailed=false;return;}if(!dragBefore)dragBefore=snapshot();try{plan=JSON.parse(dragBefore);updateObject(plan,id,patch,{linked,anchor:'center'});scene.setPlan(plan);scene.select(id);refreshInspectorValues();if(phase==='commit'){remember(dragBefore);dragBefore=null;render();}}catch(error){plan=JSON.parse(dragBefore);scene.setPlan(plan);scene.select(id);refreshInspectorValues();if(!dragFailed)toast(error.message,true);dragFailed=true;if(phase==='commit'){dragBefore=null;render();}}}});scene.setPlan(plan);scene.select(selected);}catch(error){$('#canvas-error').hidden=false;$('#canvas-error').textContent=`无法初始化三维画布：${error.message}。请在支持 WebGL 2 的浏览器中开启硬件加速。对象列表与方案导入导出仍可使用。`;toast('画布初始化失败。',true);}
+try{scene=new PlanScene($('#scene'),{onSelect:select,onMeasurementChange:updateMeasurement,onTransform(id,patch,phase){if(phase==='cancel'){if(dragBefore){plan=JSON.parse(dragBefore);dragBefore=null;render();}return;}if(phase==='start'){dragBefore=snapshot();dragFailed=false;return;}if(!dragBefore)dragBefore=snapshot();try{plan=JSON.parse(dragBefore);updateObject(plan,id,patch,{linked,anchor:'center'});scene.setPlan(plan);scene.select(id);refreshInspectorValues();if(phase==='commit'){remember(dragBefore);dragBefore=null;render();}}catch(error){plan=JSON.parse(dragBefore);scene.setPlan(plan);scene.select(id);refreshInspectorValues();if(!dragFailed)toast(error.message,true);dragFailed=true;if(phase==='commit'){dragBefore=null;render();}}}});scene.setPlan(plan);scene.select(selected);}catch(error){$('#canvas-error').hidden=false;$('#canvas-error').textContent=`无法初始化三维画布：${error.message}。请在支持 WebGL 2 的浏览器中开启硬件加速。对象列表与方案导入导出仍可使用。`;toast('画布初始化失败。',true);}
 render();scene?.fit();
 window.addEventListener('beforeunload',()=>{try{localStorage.setItem(STORAGE,snapshot());}catch{}});

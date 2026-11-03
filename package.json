@@ -6,7 +6,7 @@
   "scripts": {
     "build": "node tools/build-single.mjs",
     "start": "node tools/build-single.mjs && node server.mjs",
-    "test": "node --test model.test.mjs scene.test.mjs measurement.test.mjs measurement-scene.test.mjs furniture-clipboard.test.mjs"
+    "test": "node --test model.test.mjs scene.test.mjs measurement.test.mjs measurement-scene.test.mjs furniture-clipboard.test.mjs furniture-snap.test.mjs furniture-snap-scene.test.mjs"
   },
   "dependencies": {
     "three": "0.187.0"

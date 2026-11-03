@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { buildMeasurementTargets, snapMeasurementPoint, measurementMetrics } from './measurement.js';
+import { buildWallSnapTargets, snapFurniturePosition } from './furniture-snap.js';
 
 const M = 0.001;
 const RAD = Math.PI / 180;
@@ -100,6 +101,8 @@ export class PlanScene {
     this.scene.add(this.selectionGroup);
     this.measurementGroup = new THREE.Group();
     this.scene.add(this.measurementGroup);
+    this.snapGroup = new THREE.Group();
+    this.scene.add(this.snapGroup);
     this.grid = new THREE.GridHelper(60, 120, '#ccd4cb', '#dfe4dc');
     this.grid.position.set(5, -0.09, 5);
     this.grid.material.transparent = true;
@@ -108,11 +111,13 @@ export class PlanScene {
     this._down = e => this.pointerDown(e);
     this._move = e => this.pointerMove(e);
     this._up = e => this.pointerUp(e);
+    this._blur = () => this.finishDrag(false);
     this._context = e => e.preventDefault();
     this.renderer.domElement.addEventListener('pointerdown', this._down);
     window.addEventListener('pointermove', this._move);
     window.addEventListener('pointerup', this._up);
     window.addEventListener('pointercancel', this._up);
+    window.addEventListener('blur', this._blur);
     this.renderer.domElement.addEventListener('contextmenu', this._context);
     this.resizeObserver = new ResizeObserver(() => {
       this.resize();
@@ -237,6 +242,7 @@ export class PlanScene {
     this.drawDimensions();
     this.drawSelection();
     this.drawMeasurement();
+    this.drawFurnitureSnap(this.drag?.snapResult);
   }
 
   buildFloor() {
@@ -802,6 +808,8 @@ export class PlanScene {
       id: o.id, pointerId: e.pointerId, mode, started: false,
       clientX: e.clientX, clientY: e.clientY,
       start: ground, original: { x: o.x, y: o.y, rotation: finite(o.rotation) },
+      object: { ...o }, snapTargets: o.type === 'furniture' ? buildWallSnapTargets(this.plan) : [],
+      snapState: null, snapResult: null,
       startAngle: Math.atan2(ground.z - o.y * M, ground.x - o.x * M), lastPatch: null
     };
     this.renderer.domElement.style.cursor = mode === 'rotate' ? 'grabbing' : 'move';
@@ -823,8 +831,18 @@ export class PlanScene {
       patch = { rotation: Math.round(angle * 10) / 10 };
     } else {
       let x = d.original.x + (p.x - d.start.x) * 1000, y = d.original.y + (p.z - d.start.z) * 1000;
-      const step = this.options.snap && !e.altKey ? 50 : 1;
-      x = Math.round(x / step) * step; y = Math.round(y / step) * step;
+      if (this.view === '2d' && d.object.type === 'furniture') {
+        const result = snapFurniturePosition(d.object, { x, y }, d.snapTargets, {
+          enabled: this.options.snap && !e.altKey,
+          millimetresPerPixel: this.millimetresPerPixel(), previous: d.snapState,
+        });
+        d.snapState = result.state; d.snapResult = result;
+        ({ x, y } = result);
+        this.drawFurnitureSnap(result);
+      } else {
+        const step = this.options.snap && !e.altKey ? 50 : 1;
+        x = Math.round(x / step) * step; y = Math.round(y / step) * step;
+      }
       patch = { x, y };
     }
     if (JSON.stringify(patch) === JSON.stringify(d.lastPatch)) return;
@@ -839,18 +857,39 @@ export class PlanScene {
     }
     this.downClient = null;
     if (!this.drag || this.drag.pointerId !== e.pointerId) return;
+    this.finishDrag(e.type !== 'pointercancel');
+  }
+
+  finishDrag(commit = true) {
+    if (!this.drag) return;
     const d = this.drag;
     this.drag = null;
-    try { this.renderer.domElement.releasePointerCapture(e.pointerId); } catch { /* Pointer cancellation may already release it. */ }
+    try { this.renderer.domElement.releasePointerCapture(d.pointerId); } catch { /* Pointer cancellation may already release it. */ }
     this.controls.enabled = true;
     this.renderer.domElement.style.cursor = '';
-    if (d.started && d.lastPatch) this.callbacks.onTransform?.(d.id, d.lastPatch, 'commit');
+    this.drawFurnitureSnap(null);
+    if (d.started && d.lastPatch) this.callbacks.onTransform?.(d.id, d.lastPatch, commit ? 'commit' : 'cancel');
+  }
+
+  drawFurnitureSnap(result) {
+    if (!this.snapGroup) return;
+    this.disposeGroup(this.snapGroup);
+    this.labels.filter(l => l.kind === 'snap').forEach(l => l.el.remove());
+    this.labels = this.labels.filter(l => l.kind !== 'snap');
+    if (!result?.label || this.view !== '2d') return;
+    for (const guide of result.guides) {
+      const points = [guide.a, guide.b].map(p => [p.x * M, 3.15, p.y * M]);
+      const line = this.line(this.snapGroup, points, ACCENT, 1);
+      line.renderOrder = 1001; line.material.depthTest = false; line.material.depthWrite = false;
+    }
+    const label = this.addLabel(`吸附：${result.label}`, new THREE.Vector3(result.x * M, 3.15, result.y * M), 'ruler');
+    label.kind = 'snap'; label.pixelOffsetY = -24;
   }
 
   setView(view) {
     if (!['2d', '3d'].includes(view) || view === this.view) return;
     if (view === '3d' && this.tool === 'measure') this.setTool('move');
-    this.drag = null;
+    this.finishDrag();
     this.view = view;
     this.camera = view === '2d' ? this.topCamera : this.perspectiveCamera;
     // OrbitControls caches the camera-up quaternion. Recreate it when swapping
@@ -880,7 +919,7 @@ export class PlanScene {
   setTool(tool) {
     const next = ['move', 'rotate', 'measure'].includes(tool) ? tool : 'move';
     if (next === this.tool) return;
-    this.drag = null; this.downClient = null;
+    this.finishDrag(); this.downClient = null;
     this.controls.enabled = true;
     if (this.tool === 'measure') this.clearMeasurement();
     this.tool = next;
@@ -893,6 +932,9 @@ export class PlanScene {
   setOptions(options) {
     const previous = { ...this.options };
     Object.assign(this.options, options);
+    if (previous.snap && !this.options.snap && this.drag) {
+      this.drag.snapState = null; this.drag.snapResult = null; this.drawFurnitureSnap(null);
+    }
     this.grid.visible = this.options.grid;
     if (['labels', 'dimensions', 'reference', 'fullHeight'].some(k => previous[k] !== this.options[k])) this.setPlan(this.plan);
   }
@@ -958,9 +1000,11 @@ export class PlanScene {
     this.resizeObserver.disconnect(); this.controls.dispose();
     this.renderer.domElement.removeEventListener('pointerdown', this._down);
     window.removeEventListener('pointermove', this._move); window.removeEventListener('pointerup', this._up); window.removeEventListener('pointercancel', this._up);
+    window.removeEventListener('blur', this._blur);
     this.renderer.domElement.removeEventListener('contextmenu', this._context);
     this.disposeGroup(this.world); this.disposeGroup(this.selectionGroup);
     this.disposeGroup(this.measurementGroup);
+    this.disposeGroup(this.snapGroup);
     this.grid.geometry.dispose(); this.grid.material.dispose(); this.referenceTexture?.dispose();
     this.renderer.dispose(); this.renderer.domElement.remove(); this.overlay.remove(); this.style.remove();
   }

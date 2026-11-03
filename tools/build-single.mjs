@@ -17,6 +17,7 @@ const MODULES = [
   { key: 'three', file: 'vendor/three.module.js' },
   { key: 'three/OrbitControls', file: 'vendor/OrbitControls.js' },
   { key: 'app/measurement', file: 'src/measurement.js' },
+  { key: 'app/furniture-snap', file: 'src/furniture-snap.js' },
   { key: 'app/model', file: 'src/model.js' },
   { key: 'app/scene', file: 'src/scene.js' },
   { key: 'app/app', file: 'src/app.js' },
@@ -27,6 +28,7 @@ const SPECIFIERS = new Map([
   ['three', 'three'],
   ['three/addons/controls/OrbitControls.js', 'three/OrbitControls'],
   ['./measurement.js', 'app/measurement'],
+  ['./furniture-snap.js', 'app/furniture-snap'],
   ['./model.js', 'app/model'],
   ['./scene.js', 'app/scene'],
 ]);
