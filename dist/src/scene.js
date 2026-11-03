@@ -423,6 +423,29 @@ export class PlanScene {
         this.cylinder(g, Math.min(w, d) * .12, .025, w * .12, hh + .015, d * .12, '#ddd9c9');
         this.cylinder(g, Math.min(w, d) * .06, .04, -w * .13, hh + .025, -d * .14, '#828e79');
       }
+    } else if (k === 'sideboard') {
+      // A fixed three-bay cabinet scales as one unit, including at the editor's
+      // minimum dimensions. Hardware stays inside its declared footprint.
+      const cabinet = new THREE.Group();
+      cabinet.scale.set(o.width / 1600, top ? 1 : o.height / 850, o.depth / 400);
+      g.add(cabinet);
+      const wood = color || '#c7ae87', section = 1.6 / 3;
+      if (top) {
+        this.box(cabinet, 1.6, .05, .4, 0, .025, 0, wood, true);
+        // Keep the worktop continuous; only the front reveal marks door bays.
+        this.box(cabinet, 1.6, .012, .382, 0, .056, -.009, '#f3f0e5', true);
+        for (let i = 0; i < 3; i++) this.box(cabinet, section - .004, .012, .018, - .8 + section * (i + .5), .056, .191, wood, true);
+      } else {
+        this.box(cabinet, 1.53, .07, .33, 0, .035, 0, '#64685f', true);
+        this.box(cabinet, 1.588, .756, .368, 0, .448, -.016, wood, true);
+        this.box(cabinet, 1.6, .024, .382, 0, .838, -.009, '#f3f0e5', true);
+        for (let i = 0; i < 3; i++) {
+          const x = -.8 + section * (i + .5);
+          this.box(cabinet, section - .004, .166, .018, x, .741, .177, wood, true);
+          this.box(cabinet, section - .004, .582, .018, x, .361, .177, wood, true);
+          for (const y of [.7325, .576]) this.box(cabinet, .09, .012, .014, x, y, .193, '#64685f');
+        }
+      }
     } else if (k === 'rug') {
       this.roundedBox(g, w, .008, d, 0, .005, 0, color || '#e3dfd0', .04);
       for (const x of [-w / 2 + .065, w / 2 - .065]) this.line(g, [[x, .011, -d / 2 + .06], [x, .011, d / 2 - .06]], '#c2bda9', .5);

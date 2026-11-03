@@ -6,7 +6,7 @@ const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const icon=n=>`<svg class="icon" aria-hidden="true"><use href="#i-${n}"/></svg>`;
 const TYPES={wall:'墙体',door:'门',window:'窗',furniture:'家具与设备'};
-const KINDS={bed:'床',nightstand:'床头柜',wardrobe:'衣柜',sofa:'沙发','coffee-table':'茶几','dining-table':'餐桌',chair:'餐椅',armchair:'休闲椅',cabinet:'储物柜',counter:'橱柜',sink:'洗手盆',toilet:'坐便器',shower:'淋浴',stove:'灶台',fridge:'冰箱',washer:'洗衣机',rug:'地毯',plant:'绿植',lamp:'台灯','side-table':'边几',bench:'长凳',vanity:'浴室柜',basin:'台盆'};
+const KINDS={bed:'床',nightstand:'床头柜',wardrobe:'衣柜',sofa:'沙发','coffee-table':'茶几','dining-table':'餐桌',chair:'餐椅',armchair:'休闲椅',cabinet:'储物柜',sideboard:'餐边柜',counter:'橱柜',sink:'洗手盆',toilet:'坐便器',shower:'淋浴',stove:'灶台',fridge:'冰箱',washer:'洗衣机',rug:'地毯',plant:'绿植',lamp:'台灯','side-table':'边几',bench:'长凳',vanity:'浴室柜',basin:'台盆'};
 const STORAGE='jusuo.plan.v1';
 let furnitureClipboard=null, furniturePasteCount=0;
 let measurement={start:null,end:null,complete:false,snapLabel:''};

@@ -1,6 +1,6 @@
 /** Apartment plan model. All measurements are millimetres; rotations are clockwise. */
 export const TYPES = Object.freeze({ wall: '墙体', door: '门 / 洞口', window: '窗', furniture: '家具 / 设备' });
-export const KIND_LABELS = Object.freeze({ bed: '双人床', nightstand: '床头柜', wardrobe: '衣柜', cabinet: '储物柜', counter: '台面', sink: '水槽', stove: '灶台', fridge: '冰箱', toilet: '马桶', shower: '淋浴区', vanity: '浴室柜', basin: '洗手盆', 'dining-table': '餐桌', chair: '餐椅', sofa: '沙发', 'coffee-table': '茶几', rug: '地毯', armchair: '单椅', washer: '洗衣机', plant: '绿植', lamp: '台灯', bench: '长凳', 'side-table': '边几', opening: '敞口', single: '平开门', sliding: '推拉门', fixed: '固定窗' });
+export const KIND_LABELS = Object.freeze({ bed: '双人床', nightstand: '床头柜', wardrobe: '衣柜', cabinet: '储物柜', sideboard: '餐边柜', counter: '台面', sink: '水槽', stove: '灶台', fridge: '冰箱', toilet: '马桶', shower: '淋浴区', vanity: '浴室柜', basin: '洗手盆', 'dining-table': '餐桌', chair: '餐椅', sofa: '沙发', 'coffee-table': '茶几', rug: '地毯', armchair: '单椅', washer: '洗衣机', plant: '绿植', lamp: '台灯', bench: '长凳', 'side-table': '边几', opening: '敞口', single: '平开门', sliding: '推拉门', fixed: '固定窗' });
 
 const clone = value => JSON.parse(JSON.stringify(value));
 const EPS = 5;
@@ -9,6 +9,7 @@ const LIVING_BALCONY_EDIT = 'remove-living-study-balcony-partitions-2026-11-02';
 const BATH2_SLIDING_EDIT = 'correct-bathroom2-sliding-door-2026-11-02';
 const HORIZONTAL_MIRROR_EDIT = 'mirror-plan-horizontal-2026-11-02';
 const NORTH_BALCONY_EDIT = 'remove-bedroom1-north-balcony-partition-2026-11-02';
+const SIDEBOARD_EDIT = 'add-dining-sideboard-2026-11-03';
 const deg = value => ((value % 360) + 360) % 360;
 const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 const GEOMETRY_FIELDS = ['x', 'y', 'width', 'depth', 'height', 'rotation', 'mirrorY', 'wallId', 'offset', 'sill', 'hinge', 'swing', 'kind'];
@@ -344,10 +345,40 @@ export function createObject(type = 'furniture', kind) {
   const object = { id: freshId(type), name: `新${KIND_LABELS[kind] || TYPES[type]}`, type, room: '未分区', x: 4900, y: 4500, rotation: 0, mirrorY: false, visible: true, locked: false, estimated: true, ...defaults[type] };
   if (kind) object.kind = kind;
   if (type === 'furniture') {
-    const sizes = { bed: [1600, 2000, 550], sofa: [2100, 850, 780], chair: [450, 480, 800], 'dining-table': [850, 1700, 750], 'coffee-table': [1000, 550, 420], armchair: [700, 750, 800], plant: [350, 350, 900], rug: [2400, 1800, 15], wardrobe: [1600, 600, 2200], toilet: [420, 680, 780], washer: [600, 600, 850], sink: [650, 450, 160], shower: [900, 900, 80] };
+    const sizes = { sideboard: [1600, 400, 850], bed: [1600, 2000, 550], sofa: [2100, 850, 780], chair: [450, 480, 800], 'dining-table': [850, 1700, 750], 'coffee-table': [1000, 550, 420], armchair: [700, 750, 800], plant: [350, 350, 900], rug: [2400, 1800, 15], wardrobe: [1600, 600, 2200], toilet: [420, 680, 780], washer: [600, 600, 850], sink: [650, 450, 160], shower: [900, 900, 80] };
     if (sizes[object.kind]) [object.width, object.depth, object.height] = sizes[object.kind];
   }
   return object;
+}
+
+/** Add the requested cabinet against the bathroom partition, then balance the
+ * untouched original dining set. Edited or locked dining sets stay together. */
+function addDiningSideboard(plan) {
+  if (plan.objects.some(o => o.id === 'dining-sideboard')) return;
+  const cabinet = { ...createObject('furniture', 'sideboard'), id: 'dining-sideboard', name: '餐厅餐边柜', room: '餐厅', color: '#c7ae87', note: '靠卫生间二外墙，柜门朝向餐桌。尺寸与通道净距为图上估算，可按实测调整。' };
+  const wall = plan.objects.find(o => o.id === 'wall-bath2-east' && o.type === 'wall');
+  const reference = plan.meta.referenceTransform || { scaleX: 1, offsetX: 0 };
+  if (wall) {
+    const angle = wall.rotation * Math.PI / 180;
+    const depth = -(wall.depth / 2 + cabinet.depth / 2 + 10) * (wall.mirrorY ? -1 : 1);
+    cabinet.x = wall.x - Math.sin(angle) * depth;
+    cabinet.y = wall.y + Math.cos(angle) * depth;
+    cabinet.rotation = deg(wall.rotation + 180);
+    cabinet.mirrorY = wall.mirrorY;
+  } else {
+    cabinet.x = reference.scaleX * 3700 + reference.offsetX;
+    cabinet.y = 4750;
+    cabinet.rotation = 270;
+    cabinet.mirrorY = reference.scaleX === -1;
+  }
+  const original = [{ id:'dining-table', kind:'dining-table', x:5200, y:4550, width:850, depth:1850, height:750, rotation:0 }];
+  for (let row = 0; row < 3; row++) for (const [side, x, rotation] of [['west',4540,270], ['east',5860,90]]) {
+    original.push({ id:`dining-chair-${side}-${row + 1}`, kind:'chair', x, y:3930 + row * 620, width:430, depth:460, height:800, rotation });
+  }
+  const dining = original.map(seed => ({ object:plan.objects.find(o => o.id === seed.id), expected:{ ...seed, x:reference.scaleX * seed.x + reference.offsetX, rotation:reference.scaleX === -1 ? deg(180-seed.rotation) : seed.rotation, mirrorY:reference.scaleX === -1 } }));
+  const untouched = dining.every(({object,expected}) => object?.type === 'furniture' && !object.locked && ['kind','x','y','width','depth','height','rotation','mirrorY'].every(field => equivalent(field, object[field], expected[field])));
+  if (untouched) for (const {object} of dining) object.x += reference.scaleX * 250;
+  plan.objects.push(cabinet);
 }
 
 /** Apply a published edit once to this reference plan, preserving unrelated edits. */
@@ -363,7 +394,8 @@ export function applyPublishedPlanEdits(plan) {
   const pending = edits.filter(edit => !applied.includes(edit.key));
   const correctBathroomDoor = !applied.includes(BATH2_SLIDING_EDIT);
   const mirrorPlan = !applied.includes(HORIZONTAL_MIRROR_EDIT);
-  if (!pending.length && !correctBathroomDoor && !mirrorPlan) return false;
+  const addSideboard = !applied.includes(SIDEBOARD_EDIT);
+  if (!pending.length && !correctBathroomDoor && !mirrorPlan && !addSideboard) return false;
   for (const edit of pending) {
     const removedIds = new Set([...edit.walls, ...edit.doors]);
     candidate.objects = candidate.objects.filter(o => !removedIds.has(o.id) && !(edit.removeAttached && ['door', 'window'].includes(o.type) && edit.walls.includes(o.wallId)));
@@ -386,8 +418,9 @@ export function applyPublishedPlanEdits(plan) {
     }
   }
   if (mirrorPlan) mirrorPlanHorizontally(candidate);
-  candidate.meta.appliedEdits = [...applied, ...pending.map(edit => edit.key), ...(correctBathroomDoor ? [BATH2_SLIDING_EDIT] : []), ...(mirrorPlan ? [HORIZONTAL_MIRROR_EDIT] : [])];
-  Object.assign(plan, candidate);
+  if (addSideboard) addDiningSideboard(candidate);
+  candidate.meta.appliedEdits = [...applied, ...pending.map(edit => edit.key), ...(correctBathroomDoor ? [BATH2_SLIDING_EDIT] : []), ...(mirrorPlan ? [HORIZONTAL_MIRROR_EDIT] : []), ...(addSideboard ? [SIDEBOARD_EDIT] : [])];
+  Object.assign(plan, validatePlan(candidate));
   return true;
 }
 

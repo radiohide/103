@@ -10,7 +10,7 @@ function sourceOrientationPlan() {
 
 test('the seed preserves annotated bounds and gives all objects unique editable names', () => {
   const plan = sourceOrientationPlan();
-  assert.equal(plan.objects.length, 85);
+  assert.equal(plan.objects.length, 86);
   assert.equal(new Set(plan.objects.map(o => o.id)).size, plan.objects.length);
   assert.ok(plan.objects.every(o => o.name && Number.isFinite(o.width)));
   assert.equal(plan.objects.filter(o => o.kind === 'chair').length, 6);
@@ -305,4 +305,68 @@ test('north balcony partition removal migrates once without changing the mirrore
   assert.equal(applyPublishedPlanEdits(plan), false);
   assert.equal(JSON.stringify(plan), saved);
   assert.deepEqual(validatePlan(plan), plan);
+});
+
+const sideboardMarker = 'add-dining-sideboard-2026-11-03';
+function beforeSideboardPlan() {
+  const plan = createInitialPlan();
+  plan.objects = plan.objects.filter(o => o.id !== 'dining-sideboard');
+  plan.meta.appliedEdits = plan.meta.appliedEdits.filter(key => key !== sideboardMarker);
+  for (const object of plan.objects.filter(o => o.id === 'dining-table' || o.id.startsWith('dining-chair-'))) object.x += 250;
+  return plan;
+}
+
+test('sideboard occupies the bathroom wall with balanced dining clearances', () => {
+  const plan = createInitialPlan(), cabinet = byId(plan, 'dining-sideboard');
+  assert.deepEqual([cabinet.width,cabinet.depth,cabinet.height], [1600,400,850]);
+  assert.equal(cabinet.kind, 'sideboard');
+  near(cabinet.x,6100); near(cabinet.y,4750);
+  const front = localPoint(cabinet,0,cabinet.depth/2);
+  near(front.x,5900); near(front.y,4750);
+  near((6400 - 180/2) - (cabinet.x + cabinet.depth/2),10,'wall gap');
+  near(front.x - (byId(plan,'dining-chair-west-2').x + 460/2),660,'cabinet to tucked chair');
+  near(byId(plan,'dining-chair-east-2').x - 460/2 - (2700+180/2),670,'opposite wall to tucked chair');
+  near(front.x - (byId(plan,'dining-table').x+850/2),1125,'cabinet to table');
+  assert.ok(cabinet.y + cabinet.width/2 < 6200 - 950/2, 'cabinet ends before bedroom doorway');
+  const added = createObject('furniture','sideboard');
+  assert.equal(added.name,'新餐边柜');
+  assert.deepEqual([added.width,added.depth,added.height],[1600,400,850]);
+});
+
+test('sideboard migration adds once, moves original dining set together and preserves other edits', () => {
+  const plan=beforeSideboardPlan();
+  byId(plan,'living-coffee').name='我的茶几';
+  byId(plan,'dining-table').color='#123456';
+  const other=plan.objects.filter(o=>!o.id.startsWith('dining-')).map(o=>structuredClone(o));
+  assert.equal(applyPublishedPlanEdits(plan),true);
+  near(byId(plan,'dining-table').x,4350);
+  assert.equal(byId(plan,'dining-table').color,'#123456');
+  assert.deepEqual(plan.objects.filter(o=>!o.id.startsWith('dining-')),other);
+  const after=JSON.stringify(plan);
+  assert.equal(applyPublishedPlanEdits(plan),false);assert.equal(JSON.stringify(plan),after);
+  removeObject(plan,'dining-sideboard');
+  assert.equal(applyPublishedPlanEdits(plan),false);
+  assert.equal(byId(plan,'dining-sideboard'),undefined,'user deletion survives reload');
+});
+
+test('sideboard migration preserves user-adjusted or locked dining groups and unrelated plans', () => {
+  for(const patch of [{x:5500},{rotation:35},{locked:true}]) {
+    const plan=beforeSideboardPlan();Object.assign(byId(plan,'dining-chair-west-1'),patch);
+    const before=structuredClone(plan.objects);
+    assert.equal(applyPublishedPlanEdits(plan),true);
+    assert.deepEqual(plan.objects.filter(o=>o.id!=='dining-sideboard'),before);
+  }
+  const plan=beforeSideboardPlan();plan.meta.source='other';
+  const before=JSON.stringify(plan);assert.equal(applyPublishedPlanEdits(plan),false);assert.equal(JSON.stringify(plan),before);
+});
+
+test('sideboard migration follows an intentionally unmirrored plan and respects existing cabinet edits', () => {
+  const plan=beforeSideboardPlan();mirrorPlanHorizontally(plan);
+  assert.equal(applyPublishedPlanEdits(plan),true);
+  near(byId(plan,'dining-sideboard').x,3700);near(byId(plan,'dining-table').x,5450);
+  near(localPoint(byId(plan,'dining-sideboard'),0,200).x,3900);
+  plan.meta.appliedEdits=plan.meta.appliedEdits.filter(key=>key!==sideboardMarker);
+  byId(plan,'dining-sideboard').width=1200;
+  const before=structuredClone(plan.objects);
+  assert.equal(applyPublishedPlanEdits(plan),true);assert.deepEqual(plan.objects,before);
 });
