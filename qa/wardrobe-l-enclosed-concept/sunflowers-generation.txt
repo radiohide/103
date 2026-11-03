@@ -1,0 +1,7 @@
+向日葵画作素材记录
+工具：内置 image_gen（非 CLI）
+用途：卧室二 L 型衣柜朝床背板上的挂画；sunflowers.png 为原始生成图。
+装裱：画面60×80cm，木框外尺寸76×96cm，中心离地1.45m。
+
+最终提示词：
+Use case: stylized-concept. Asset type: original wall-art texture for a framed painting in a warm white bedroom, portrait 3:4 aspect ratio. Paint a graceful still life of golden sunflowers with deep brown centers and a few muted olive leaves, arranged in a simple warm ochre ceramic vase on a softly lit tabletop. Painterly oil on canvas with tactile, confident brush strokes; quiet warm ivory background and subtle sage undertones, balanced composition, flowers lively and organic, rich gold but not neon. Show only the flat artwork filling the image edge to edge, viewed perfectly straight on, no perspective. No frame, room, people, lettering, signature, logo or watermark. This is the painting itself, not a photograph of a painting.

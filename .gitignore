@@ -1,3 +1,10 @@
 node_modules/
-qa/
+qa/*
+!qa/wardrobe-l-enclosed-concept/
+qa/wardrobe-l-enclosed-concept/app.js
+qa/wardrobe-l-enclosed-concept/art.js
+qa/wardrobe-l-enclosed-concept/build-bundle.mjs
+qa/wardrobe-l-enclosed-concept/page.html
+qa/wardrobe-l-enclosed-concept/room.js
+qa/wardrobe-l-enclosed-concept/interior.png
 *.log

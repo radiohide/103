@@ -35,4 +35,24 @@ npm start
 
 预览：`http://127.0.0.1:4319/`。源码在 `src/`；`assets/` 保存原始参考照片；`vendor/` 为 Three.js 0.187.0 及 Reflector，MIT 许可保留在源码中。`build.mjs` 生成完全自包含的 HTML。
 
-这是单独的目录和 Sites 项目，未连接或修改旧 GitHub 仓库。
+## L 型衣帽区设计版本
+
+当前设计保存在 `qa/wardrobe-l-enclosed-concept/index.html`，是可以直接双击打开的独立单文件。它不替换 `dist/index.html` 的线上卧室，也不读写原户型项目数据。
+
+- 布置范围 2.35 × 1.225 m，约 2.88㎡，含柜体；床沿用向窗移动 55 cm 的位置。
+- L 型长柜 235 × 45 cm，四格叠衣收纳；返柜 72.5 × 60 cm 挂衣，转角共用。
+- 长边朝床为完整柜背，不设正面门洞；朝房门一侧敞开，从侧边进入。
+- 柜内闭门通道及名义侧口 77.5 cm；卧室房门打开至 90° 时，转入处最窄约 63 cm。平开柜门取衣时占用通道。
+- 吊顶与柜背前沿齐平，风口内嵌；衣帽区顶 2.4 m，中央顶 2.7 m。
+- 朝床背板配向日葵画，木框外尺寸 76 × 96 cm。原画和内置生成工具的提示词记录分别为 `sunflowers.png`、`sunflowers-generation.txt`，画作已嵌入 HTML。
+- `sunflower-room.png` 为本版效果，`plan.png` 为本版平面尺寸图。尺寸按模型计算，施工前需实测复核。
+
+重新生成此设计版本：
+
+```text
+node qa/wardrobe-l-enclosed-concept/build-concept.mjs
+```
+
+开发文件为该目录内的 `wardrobe.js`、`art-source.js`、`plan.js` 和 `build-concept.mjs`；构建时产生的中间文件不提交。原房间模块、照片和 Three.js 依赖仍沿用本项目根目录的源码及素材。
+
+GitHub 备份位于 `radiohide/103` 的独立 `bedroom-two-l-wardrobe` 分支；原户型的 `main` 分支保持独立。
