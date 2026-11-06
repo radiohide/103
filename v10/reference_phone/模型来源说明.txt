@@ -1,0 +1,17 @@
+iPhone 16 Pro 试装配参考机身
+
+作者：Xem Studio
+来源：https://www.xemstudio.com/objects/iphone-16-pro/
+许可：CC BY 4.0（https://creativecommons.org/licenses/by/4.0/）
+归属注明：iPhone 16 Pro body by Xem Studio, CC BY 4.0。
+下载日期：2026-11-06。
+下载的 STEP/STL 保持原始内容。装配时的旋转和平移另行记录。
+
+作者说明按 Apple 官方配件尺寸图重建。这不是 Apple 提供的官方 STEP，也不是实机扫描。
+独立测得机身宽 71.45、长 149.61、机身厚 8.25 mm；包含摄像头的总厚度 12.53 mm。
+原坐标背玻璃 Z=0、正面 Z=8.25、相机台肩 Z=-2.05、三主镜头玻璃 Z=-4.28。
+
+用途：机身包络、三主镜头位置和高度的初步装配检查。
+局限：台肩角部形状是作者简化；模型未呈现按钮向外凸起，闪光灯/传感器等细节也不能据此认证。
+台肩简化区的相交须与官方图、实机区别处理。最终仍需真实手机及打印首件试配。
+完整下载链接、许可和独立测量结果见 model_source.json。

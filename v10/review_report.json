@@ -1,0 +1,583 @@
+{
+  "version": 10,
+  "review": "independent exported V10 CAD geometry",
+  "status": "geometry_checks_pass_with_prototype_notes",
+  "input_sha256": {
+    "modified_case.step": "d7cacfdae8bc51403a9d831c92afe31384c84aa6da5028cc70f2ca237832e9ce",
+    "insert_base.step": "79b3de8d4136027f9de888e01a28fdc665947aa4fb4897473ea3c63f3b6378ca",
+    "upper_bezel.step": "ea231b687d1ca1cd327fa005541086a1d7afd11e943884dc83dbd0872e7a5336",
+    "moving_cover.step": "ac72a44adde67343f006fc31dfb511e9fec40f703dad0940f9889fbe181789e9"
+  },
+  "checks": {
+    "four_valid_single_solids": true,
+    "main_builder_checks_passed": true,
+    "four_equal_outer_and_inner_corner_arcs": true,
+    "true_constant_width_4mm_closed_roof": true,
+    "no_extra_cutout_or_inboard_frame_ledge": true,
+    "continuous_point38_hidden_channel_roof": true,
+    "actual_shoe_and_ear_material_preserved": true,
+    "upper_key_clear_over_continuous_travel_and_play": true,
+    "guide_has_side_contact_at_lowest_z": true,
+    "ear_and_shoe_both_engage_end_stops": true,
+    "all_four_snap_beams_preserved": true,
+    "all_four_snap_shoulders_and_backups_exist": true,
+    "all_four_snap_release_paths_clear": true,
+    "fixed_parts_clear": true,
+    "actual_case_clamping_shoulders_exist": true,
+    "phone_clear_in_both_states_and_lowest_z": true,
+    "three_expanded_rear_optical_cones_clear": true,
+    "input_step_files_unchanged_during_review": true
+  },
+  "notes": [
+    "Only the exterior roof ring is required to be 4 mm wide. Separate hidden guides and the clipped phone-side flange are measured independently.",
+    "The low guide side-contact area and the smaller axial stop area are reported separately.",
+    "Geometric clearance and contact checks do not validate PLA retention force, fatigue, slicer behaviour or photographic performance."
+  ],
+  "cad": {
+    "modified_case": {
+      "valid": true,
+      "solid_count": 1,
+      "bbox_mm": [
+        2.8042439490957963e-13,
+        2.801676990205805e-13,
+        -9.760000100000003,
+        75.56439401952541,
+        153.72024831243763,
+        4.6000001
+      ],
+      "volume_mm3": 13799.601955984153
+    },
+    "insert_base": {
+      "valid": true,
+      "solid_count": 1,
+      "bbox_mm": [
+        2.357199999999999,
+        3.1528008583705214,
+        2.3,
+        73.20000000000022,
+        50.8,
+        4.6
+      ],
+      "volume_mm3": 956.0774714397406
+    },
+    "upper_bezel": {
+      "valid": true,
+      "solid_count": 1,
+      "bbox_mm": [
+        0.5,
+        0.5,
+        2.3,
+        73.4,
+        50.5,
+        6.38
+      ],
+      "volume_mm3": 1065.3836672597624
+    },
+    "moving_cover": {
+      "valid": true,
+      "solid_count": 1,
+      "bbox_mm": [
+        6.571373506871705,
+        2.1,
+        4.7,
+        40.650000000000006,
+        49.4,
+        5.85
+      ],
+      "volume_mm3": 1028.1849573899829
+    }
+  },
+  "uniform_roof": {
+    "z_mm": 6.38,
+    "top_face_count": 1,
+    "inner_wire_count": 1,
+    "outer_exact_rr_area_difference_mm2": 0.0,
+    "inner_exact_rr_area_difference_mm2": 0.0,
+    "outer_wire": {
+      "arc_count": 4,
+      "line_count": 4,
+      "arcs": [
+        {
+          "radius_mm": 15.0,
+          "length_mm": 23.561944901923447,
+          "center_mm": [
+            15.5,
+            15.5,
+            6.38
+          ]
+        },
+        {
+          "radius_mm": 15.0,
+          "length_mm": 23.561944901923447,
+          "center_mm": [
+            58.4,
+            15.5,
+            6.38
+          ]
+        },
+        {
+          "radius_mm": 15.0,
+          "length_mm": 23.561944901923447,
+          "center_mm": [
+            58.4,
+            35.5,
+            6.38
+          ]
+        },
+        {
+          "radius_mm": 15.0,
+          "length_mm": 23.561944901923447,
+          "center_mm": [
+            15.5,
+            35.5,
+            6.38
+          ]
+        }
+      ],
+      "line_lengths_mm": [
+        20.0,
+        42.9,
+        20.0,
+        42.9
+      ],
+      "other_edge_types": []
+    },
+    "inner_wire": {
+      "arc_count": 4,
+      "line_count": 4,
+      "arcs": [
+        {
+          "radius_mm": 11.0,
+          "length_mm": 17.27875959474386,
+          "center_mm": [
+            15.5,
+            15.5,
+            6.38
+          ]
+        },
+        {
+          "radius_mm": 11.0,
+          "length_mm": 17.27875959474386,
+          "center_mm": [
+            15.5,
+            35.5,
+            6.38
+          ]
+        },
+        {
+          "radius_mm": 11.0,
+          "length_mm": 17.27875959474386,
+          "center_mm": [
+            58.4,
+            35.5,
+            6.38
+          ]
+        },
+        {
+          "radius_mm": 11.0,
+          "length_mm": 17.27875959474386,
+          "center_mm": [
+            58.4,
+            15.5,
+            6.38
+          ]
+        }
+      ],
+      "line_lengths_mm": [
+        20.0,
+        42.9,
+        20.0,
+        42.9
+      ],
+      "other_edge_types": []
+    },
+    "minimum_exact_wire_distance_mm": 4.0,
+    "concentric_corner_centres_match": true
+  },
+  "shared_rr_opening_intrusions_mm3": {
+    "base": 0.0,
+    "upper": 0.0,
+    "case": 0.0
+  },
+  "key_channel_roof": {
+    "nominal_thickness_mm": 0.3799999999999999,
+    "cap_expected_volume_mm3": 17.126979999999996,
+    "cap_missing_volume_mm3": 0.0,
+    "air_channel_remaining_volume_mm3": 0.0
+  },
+  "upper_guide": {
+    "actual_shoe_missing_mm3": 0.0,
+    "actual_ear_missing_mm3": 0.0,
+    "continuous_full_travel_and_all_play_swept_collision_mm3": 0.0,
+    "side_contact_samples_mm2": [
+      [
+        0.0,
+        -0.151,
+        -0.1,
+        1.599999999999703
+      ],
+      [
+        0.0,
+        0.151,
+        -0.1,
+        0.39999999999995445
+      ],
+      [
+        0.0,
+        -0.151,
+        0.15,
+        1.5999999999997032
+      ],
+      [
+        0.0,
+        0.151,
+        0.15,
+        1.399999999999844
+      ],
+      [
+        7.5625,
+        -0.151,
+        -0.1,
+        1.599999999999703
+      ],
+      [
+        7.5625,
+        0.151,
+        -0.1,
+        0.3999999999999545
+      ],
+      [
+        7.5625,
+        -0.151,
+        0.15,
+        1.5999999999997032
+      ],
+      [
+        7.5625,
+        0.151,
+        0.15,
+        1.3999999999998445
+      ],
+      [
+        15.125,
+        -0.151,
+        -0.1,
+        1.599999999999703
+      ],
+      [
+        15.125,
+        0.151,
+        -0.1,
+        0.3999999999999545
+      ],
+      [
+        15.125,
+        -0.151,
+        0.15,
+        1.5999999999997032
+      ],
+      [
+        15.125,
+        0.151,
+        0.15,
+        1.3999999999998445
+      ],
+      [
+        22.6875,
+        -0.151,
+        -0.1,
+        1.5999999999997034
+      ],
+      [
+        22.6875,
+        0.151,
+        -0.1,
+        0.39999999999995445
+      ],
+      [
+        22.6875,
+        -0.151,
+        0.15,
+        1.5999999999997032
+      ],
+      [
+        22.6875,
+        0.151,
+        0.15,
+        1.3999999999998443
+      ],
+      [
+        30.25,
+        -0.151,
+        -0.1,
+        1.5999999999997032
+      ],
+      [
+        30.25,
+        0.151,
+        -0.1,
+        0.3999999999999545
+      ],
+      [
+        30.25,
+        -0.151,
+        0.15,
+        1.5999999999997032
+      ],
+      [
+        30.25,
+        0.151,
+        0.15,
+        1.399999999999844
+      ]
+    ],
+    "axial_stop_contact_samples_mm2": [
+      [
+        -0.211,
+        -0.15,
+        -0.1,
+        0.09989999999979662,
+        0.6799999999984151,
+        0.7798999999982117
+      ],
+      [
+        -0.211,
+        0,
+        -0.1,
+        0.09989999999979664,
+        0.5599999999986947,
+        0.6598999999984912
+      ],
+      [
+        -0.211,
+        0.15,
+        -0.1,
+        0.09989999999976708,
+        0.43999999999897443,
+        0.5398999999987415
+      ],
+      [
+        -0.211,
+        -0.15,
+        0.15,
+        0.349899999999288,
+        0.6799999999988176,
+        1.0298999999981056
+      ],
+      [
+        -0.211,
+        0,
+        0.15,
+        0.349899999999288,
+        0.559999999999026,
+        0.9098999999983141
+      ],
+      [
+        -0.211,
+        0.15,
+        0.15,
+        0.3498999999991844,
+        0.43999999999923484,
+        0.7898999999984193
+      ],
+      [
+        30.461,
+        -0.15,
+        -0.1,
+        0.09990000000047687,
+        0.6799999999984151,
+        0.7798999999988919
+      ],
+      [
+        30.461,
+        0,
+        -0.1,
+        0.09990000000047687,
+        0.5599999999986947,
+        0.6598999999991715
+      ],
+      [
+        30.461,
+        0.15,
+        -0.1,
+        0.09990000000047687,
+        0.4399999999989744,
+        0.5398999999994513
+      ],
+      [
+        30.461,
+        -0.15,
+        0.15,
+        0.3499000000016706,
+        0.6799999999976095,
+        1.0298999999992802
+      ],
+      [
+        30.461,
+        0,
+        0.15,
+        0.34990000000167065,
+        0.5599999999980314,
+        0.9098999999997021
+      ],
+      [
+        30.461,
+        0.15,
+        0.15,
+        0.3499000000016706,
+        0.4399999999984533,
+        0.789900000000124
+      ]
+    ],
+    "minimum_side_contact_mm2": 0.39999999999995445,
+    "minimum_shoe_axial_contact_mm2": 0.09989999999976708,
+    "minimum_ear_axial_contact_mm2": 0.4399999999984533,
+    "minimum_combined_axial_contact_mm2": 0.5398999999987415,
+    "note": "Side contact normal is Y; axial end-stop contact normal is X. The shoe+ear volume probes exclude the detent so intentional detent resistance cannot satisfy a hard-stop check."
+  },
+  "four_snaps": [
+    {
+      "index": 0,
+      "release_direction": [
+        1.0,
+        0,
+        0
+      ],
+      "expected_beam_missing_mm3": 0.0,
+      "retention_contact_area_mm2": 0.8903429173527894,
+      "backup_contact_area_mm2": 6.544999101003451,
+      "radial_release_collision_mm3": 0.0,
+      "released_hook_upward_path_max_mm3": 0.0,
+      "tool_collision_samples_mm3": [
+        0.0,
+        0.0
+      ],
+      "leg_tip_to_case_distance_mm": 0.2999999999999985,
+      "leg_tip_bbox_mm": [
+        1.799999999999998,
+        28.2,
+        2.3,
+        2.85,
+        31.8,
+        2.31
+      ]
+    },
+    {
+      "index": 1,
+      "release_direction": [
+        -1.0,
+        0,
+        0
+      ],
+      "expected_beam_missing_mm3": 0.0,
+      "retention_contact_area_mm2": 0.8903429173527809,
+      "backup_contact_area_mm2": 6.5449991010029,
+      "radial_release_collision_mm3": 0.0,
+      "released_hook_upward_path_max_mm3": 0.0,
+      "tool_collision_samples_mm3": [
+        0.0,
+        0.0
+      ],
+      "leg_tip_to_case_distance_mm": 0.9331373899419781,
+      "leg_tip_bbox_mm": [
+        71.05,
+        28.2,
+        2.3,
+        72.10000000000001,
+        31.8,
+        2.31
+      ]
+    },
+    {
+      "index": 2,
+      "release_direction": [
+        0,
+        -1.0,
+        0
+      ],
+      "expected_beam_missing_mm3": 0.0,
+      "retention_contact_area_mm2": 0.8903429173527913,
+      "backup_contact_area_mm2": 6.544999101011537,
+      "radial_release_collision_mm3": 0.0,
+      "released_hook_upward_path_max_mm3": 0.0,
+      "tool_collision_samples_mm3": [
+        0.0,
+        0.0
+      ],
+      "leg_tip_to_case_distance_mm": 0.75,
+      "leg_tip_bbox_mm": [
+        16.2,
+        49.199999999999996,
+        2.3,
+        19.8,
+        50.25,
+        2.31
+      ]
+    },
+    {
+      "index": 3,
+      "release_direction": [
+        0,
+        -1.0,
+        0
+      ],
+      "expected_beam_missing_mm3": 0.0,
+      "retention_contact_area_mm2": 0.8903429173527894,
+      "backup_contact_area_mm2": 6.544999101011539,
+      "radial_release_collision_mm3": 0.0,
+      "released_hook_upward_path_max_mm3": 0.0,
+      "tool_collision_samples_mm3": [
+        0.0,
+        0.0
+      ],
+      "leg_tip_to_case_distance_mm": 0.6831206711602228,
+      "leg_tip_bbox_mm": [
+        56.199999999999996,
+        49.199999999999996,
+        2.3,
+        59.8,
+        50.25,
+        2.31
+      ]
+    }
+  ],
+  "fixed_part_intersections_mm3": {
+    "case_base": 0.0,
+    "case_upper": 0.0,
+    "base_upper": 0.0
+  },
+  "actual_clamp_bearing_areas_mm2": {
+    "inner": 71.07273657409455,
+    "outer": 300.02769788823696
+  },
+  "phone_intersections_mm3": {
+    "modified_case_fixed": 0.0,
+    "insert_base_fixed": 0.0,
+    "upper_bezel_fixed": 0.0,
+    "moving_cover_closed": 0.0,
+    "moving_cover_open": 0.0,
+    "moving_cover_lowest_closed": 0.0,
+    "moving_cover_lowest_open": 0.0
+  },
+  "expanded_optical_intersections_mm3": {
+    "rear1": {
+      "modified_case": 0.0,
+      "insert_base": 0.0,
+      "upper_bezel": 0.0,
+      "moving_cover": 0.0
+    },
+    "rear2": {
+      "modified_case": 0.0,
+      "insert_base": 0.0,
+      "upper_bezel": 0.0,
+      "moving_cover": 0.0
+    },
+    "rear3": {
+      "modified_case": 0.0,
+      "insert_base": 0.0,
+      "upper_bezel": 0.0,
+      "moving_cover": 0.0
+    }
+  },
+  "minimum_nominal_down_play_glass_gap_mm": 0.3200000000000003
+}

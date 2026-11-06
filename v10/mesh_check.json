@@ -1,0 +1,117 @@
+{
+  "status": "final_meshes_pass",
+  "method": "Raw STL area test; connectivity inspected using load_mesh(process=True), split(only_watertight=False, repair=False). No broad repair performed.",
+  "all_four_single_watertight_solids": true,
+  "pre_cleanup_report": null,
+  "cleanup_history": [],
+  "results": [
+    {
+      "file": "insert_base.stl",
+      "vertices": 2834,
+      "faces": 5676,
+      "raw_zero_area_face_count": 0,
+      "zero_area_face_count": 0,
+      "watertight": true,
+      "winding_consistent": true,
+      "is_volume": true,
+      "volume_mm3": 956.6973184220311,
+      "connected_body_count": 1,
+      "body_face_counts": [
+        5676
+      ],
+      "bounds_mm": [
+        [
+          2.3571999073028564,
+          -50.79999923706055,
+          0.0
+        ],
+        [
+          73.19999694824219,
+          -3.1528007984161377,
+          2.299999952316284
+        ]
+      ]
+    },
+    {
+      "file": "modified_case.stl",
+      "vertices": 53662,
+      "faces": 108892,
+      "raw_zero_area_face_count": 0,
+      "zero_area_face_count": 0,
+      "watertight": true,
+      "winding_consistent": true,
+      "is_volume": true,
+      "volume_mm3": 13833.02015017537,
+      "connected_body_count": 1,
+      "body_face_counts": [
+        108892
+      ],
+      "bounds_mm": [
+        [
+          0.004449575673788786,
+          -153.71981811523438,
+          -9.760000228881836
+        ],
+        [
+          75.55944061279297,
+          -0.004953335504978895,
+          4.599999904632568
+        ]
+      ]
+    },
+    {
+      "file": "moving_cover.stl",
+      "vertices": 704,
+      "faces": 1404,
+      "raw_zero_area_face_count": 0,
+      "zero_area_face_count": 0,
+      "watertight": true,
+      "winding_consistent": true,
+      "is_volume": true,
+      "volume_mm3": 1028.3999658223804,
+      "connected_body_count": 1,
+      "body_face_counts": [
+        1404
+      ],
+      "bounds_mm": [
+        [
+          6.571373462677002,
+          -49.400001525878906,
+          0.0
+        ],
+        [
+          40.650001525878906,
+          -2.0999999046325684,
+          1.149999976158142
+        ]
+      ]
+    },
+    {
+      "file": "upper_bezel.stl",
+      "vertices": 800,
+      "faces": 1600,
+      "raw_zero_area_face_count": 0,
+      "zero_area_face_count": 0,
+      "watertight": true,
+      "winding_consistent": true,
+      "is_volume": true,
+      "volume_mm3": 1065.0146718196982,
+      "connected_body_count": 1,
+      "body_face_counts": [
+        1600
+      ],
+      "bounds_mm": [
+        [
+          0.5,
+          0.5,
+          -5.633096001019178e-17
+        ],
+        [
+          73.4000015258789,
+          50.5,
+          4.079999923706055
+        ]
+      ]
+    }
+  ]
+}

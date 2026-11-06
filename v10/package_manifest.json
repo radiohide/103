@@ -1,0 +1,114 @@
+{
+  "modified_case.step": {
+    "bytes": 18354125,
+    "sha256": "23b324de9e3b73a1a4225e261798eea1f88a944d394ac5db71bf0c882b4e4d09"
+  },
+  "modified_case.stl": {
+    "bytes": 5444684,
+    "sha256": "173fc8df13383761ac591f15cb4ded5a7f3b7ee938ebee172c58da931e881be3"
+  },
+  "insert_base.step": {
+    "bytes": 3663350,
+    "sha256": "79b3de8d4136027f9de888e01a28fdc665947aa4fb4897473ea3c63f3b6378ca"
+  },
+  "insert_base.stl": {
+    "bytes": 283884,
+    "sha256": "6133a5f8da267dcff07cc6ea0a9fccfa7b71cec9dec086b71ff5c57245dd05b3"
+  },
+  "upper_bezel.step": {
+    "bytes": 287369,
+    "sha256": "ea231b687d1ca1cd327fa005541086a1d7afd11e943884dc83dbd0872e7a5336"
+  },
+  "upper_bezel.stl": {
+    "bytes": 80084,
+    "sha256": "7dc483eedf745bdeacaa387a205815398781f90107ba6a5c359f2e33ff6cd716"
+  },
+  "moving_cover.step": {
+    "bytes": 1082329,
+    "sha256": "ac72a44adde67343f006fc31dfb511e9fec40f703dad0940f9889fbe181789e9"
+  },
+  "moving_cover.stl": {
+    "bytes": 70284,
+    "sha256": "7d28c17e7ad2fb5ecab524e30ce666690b866fbc9e22e50fc6688d4f26e689f3"
+  },
+  "assembly_closed.step": {
+    "bytes": 23668263,
+    "sha256": "0f73cc6ea2dc453a5a7feae8556d8c88454711b2be98927f9381a717b52e5b5a"
+  },
+  "assembly_open.step": {
+    "bytes": 23668502,
+    "sha256": "f95155e033a17257c592387370e5d22eac0a5fb305d5c45580669f6bc2c82a73"
+  },
+  "assembly_frame_only.step": {
+    "bytes": 22514435,
+    "sha256": "f79a1df065e8b092bbec9e14991fbd4c7efb5444857fdad2af7ab6d1eb0757b7"
+  },
+  "assembly_phone_closed.step": {
+    "bytes": 33044271,
+    "sha256": "26fec615b9c65d02f28a365954246a20c88a8a8a9a31dcf4a8ef10de0154111f"
+  },
+  "assembly_phone_open.step": {
+    "bytes": 33044511,
+    "sha256": "378510fd61aebefba7cd9c3bcebab9b91660fc949546a2288038a02340b8a6d3"
+  },
+  "assembly_phone_frame_only.step": {
+    "bytes": 31890476,
+    "sha256": "7166537282fc38acc1f2c210526eb4b119ec3980e35c547b3c3f417d5d25900b"
+  },
+  "设计说明.txt": {
+    "bytes": 4052,
+    "sha256": "6aaeb3992ed9c9392da1d53b27cfdef27f2cee59e85ff95753f06cec7cd59e0c"
+  },
+  "design_report.json": {
+    "bytes": 10990,
+    "sha256": "caafc5bad4c27b04734bdb601c67bab608a6689b9291489e91704bf0001d27bb"
+  },
+  "review_report.json": {
+    "bytes": 13498,
+    "sha256": "dea7f6e906c30125584e5c0220c0c2b97678b0c15b042256b23e284f4f586995"
+  },
+  "case_finalization_report.json": {
+    "bytes": 1427,
+    "sha256": "d45a966e4f1eb5c24edb43454ff5ec25bd84a7456521fcf5e0886654c7edee17"
+  },
+  "case_update_review.json": {
+    "bytes": 4799,
+    "sha256": "b27f3f08b6e8efdf3b03a62015be58864d5a75e1e1b25680ac4f2d5a082431a0"
+  },
+  "corner_patch_report.json": {
+    "bytes": 9417,
+    "sha256": "1629ff74670050ca1ef444e042872b660b7c0b660fdb9d8e04b3b6000f22986b"
+  },
+  "case_honeycomb_blank_report.json": {
+    "bytes": 2850,
+    "sha256": "fd93b470bff50eb04fb7d8117ca26ed8708b1d2c6e88d1f97584610c0defb953"
+  },
+  "mesh_check.json": {
+    "bytes": 2831,
+    "sha256": "7b9ea3bf4ab2acc7eb873d21533f80855a0e1313dd8c3378a2a00ee7950e1bf0"
+  },
+  "mesh_debug.json": {
+    "bytes": 63558,
+    "sha256": "4a290bf4511e0c949c3cc70f7cdfa628e61b555b4a15e636eacc57cdbffc9532"
+  },
+  "detent_check.json": {
+    "bytes": 1559,
+    "sha256": "9e99687113d214d32acccb829bcd277a533a4a5691397ecc7c2282e7f039c977"
+  },
+  "mechanism_geometry.json": {
+    "bytes": 147862,
+    "sha256": "f33dfd91856d0d7f38e7e831e010298cc284bceecea10d8de4fcb34f6298ebab"
+  },
+  "reference_phone/iphone-16-pro-body.step": {
+    "bytes": 9086061,
+    "sha256": "b698a8b47f8b3f47debff4125e9aa3f31665e981cd15459fefd735c20cda7d73"
+  },
+  "reference_phone/model_source.json": {
+    "bytes": 3610,
+    "sha256": "daae2881f4588d603d8b3f86dacfac0fad6c9ba2fb37cf269ef2b90e7d372d5e"
+  },
+  "reference_phone/模型来源说明.txt": {
+    "bytes": 1068,
+    "sha256": "0d79e24cdcac307746ee0380ed2d54a9931ea52fa2189bdda2395ded89c491d2"
+  }
+}

@@ -1,0 +1,91 @@
+{
+  "model": "iPhone 16 Pro body",
+  "author": "Xem Studio",
+  "source_page": "https://www.xemstudio.com/objects/iphone-16-pro/",
+  "step_url": "https://www.xemstudio.com/files/hardware/iphone-16-pro/iphone-16-pro-body.step",
+  "stl_url": "https://www.xemstudio.com/files/hardware/iphone-16-pro/iphone-16-pro-body.stl",
+  "license": "CC BY 4.0",
+  "license_url": "https://creativecommons.org/licenses/by/4.0/",
+  "attribution": "iPhone 16 Pro body by Xem Studio, licensed CC BY 4.0. Original geometry downloaded unchanged; any later positioning is an assembly transform.",
+  "retrieved_date": "2026-11-06",
+  "source_basis": "Author states geometry was reconstructed from Apple's accessory dimensional drawing, including corner-profile points, edge profile and camera dimensions. This is not an Apple-issued STEP model or a measured physical handset.",
+  "official_dimension_reference": "https://developer.apple.com/download/files/accessories/dimensional-drawings/iphone-16-pro.pdf",
+  "nominal_body_dimensions_mm": [
+    71.45,
+    149.61,
+    8.25
+  ],
+  "native_coordinate_notes": {
+    "body_center_xy": [
+      0,
+      0
+    ],
+    "back_glass_z": 0,
+    "front_screen_z": 8.25,
+    "camera_plateau_z": -2.05,
+    "rear_camera_glass_z": -4.28,
+    "main_camera_centres_xy": [
+      [
+        21.555,
+        60.635
+      ],
+      [
+        21.555,
+        41.395
+      ],
+      [
+        3.565,
+        51.015
+      ]
+    ],
+    "main_camera_diameter_mm": 16.2,
+    "orientation_hint": "For the V6 exported assembly coordinates, rotate 180 degrees about Y and translate to the case centre; then determine the axial seating offset from the case inner surface. For rear-view review coordinates, also undo the exported Y reflection."
+  },
+  "limitations": [
+    "The author explicitly approximates the camera plateau corner outline, which is not dimensioned in the cited drawing.",
+    "Actual downloaded STEP has no width beyond 71.45 mm; the nominal 0.45 mm button protrusions are therefore not represented as external button solids.",
+    "Only three analytic cylindrical faces exist, corresponding to the main camera rings. Small sensors and flash should use the official drawing for their detailed keep-outs.",
+    "The source index.json still names an older envelope file; the body files were obtained from the direct links on the current model page and independently measured.",
+    "Use for initial envelope and camera-height checks. Simplified camera-island corners and omitted controls cannot validate the complete real handset fit."
+  ],
+  "independent_file_checks": {
+    "step_valid": true,
+    "step_solid_count": 1,
+    "step_face_count": 2631,
+    "step_bbox_mm": [
+      -35.72500010000017,
+      -74.8050001,
+      -4.28,
+      35.725000100000315,
+      74.80500010000036,
+      8.2500001
+    ],
+    "step_volume_mm3": 91828.0048045243,
+    "stl_watertight": true,
+    "stl_consistent_winding": true,
+    "stl_body_count": 1,
+    "stl_face_count": 7610,
+    "stl_bbox_mm": [
+      [
+        -35.724998474121094,
+        -74.80500030517578,
+        -4.28000020980835
+      ],
+      [
+        35.724998474121094,
+        74.80500030517578,
+        8.25
+      ]
+    ],
+    "files": {
+      "iphone-16-pro-body.step": {
+        "bytes": 9086061,
+        "sha256": "b698a8b47f8b3f47debff4125e9aa3f31665e981cd15459fefd735c20cda7d73"
+      },
+      "iphone-16-pro-body.stl": {
+        "bytes": 380584,
+        "sha256": "c9bc9f30c91dc3fcca90c7b4aaf0bd1462389973956542259bd4ba4a87a110dd"
+      }
+    }
+  }
+}

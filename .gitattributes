@@ -1,0 +1,8 @@
+* -text
+README.md text eol=lf
+.gitattributes text eol=lf
+.gitignore text eol=lf
+*.step binary
+*.stl binary
+*.zip binary
+*.png binary

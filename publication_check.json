@@ -1,0 +1,10 @@
+{
+  "version": 10,
+  "source_archive": "camera-slide-v10-uniform-frame.zip",
+  "source_archive_sha256": "fe7c0e06968760d0a531ff2a7c39ff92566976280239ba2fc2d55805a7ade67e",
+  "package_file_count": 29,
+  "manifest_files_verified": 28,
+  "case_step_sha256": "23b324de9e3b73a1a4225e261798eea1f88a944d394ac5db71bf0c882b4e4d09",
+  "snapshot": "Original checked V10 archive extracted byte-for-byte, plus an identical ZIP download and V10 screenshots.",
+  "source_code_scope": "This branch archives deliverables. It does not claim a self-contained reproducible CadQuery build."
+}

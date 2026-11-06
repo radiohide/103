@@ -1,0 +1,587 @@
+{
+  "version": 10,
+  "status": "geometry_checks_pass",
+  "printed_part_count": 4,
+  "material_target": "PLA",
+  "metal_hardware_count": 0,
+  "case_width_mm": 75.5643940195256,
+  "case_height_mm": 153.7202483124628,
+  "travel_mm": 30.25,
+  "frame_top_z_mm": 6.38,
+  "uniform_frame": {
+    "outer_bounds_mm": [
+      0.5,
+      0.5,
+      73.4,
+      50.5
+    ],
+    "outer_radius_mm": 15.0,
+    "inner_bounds_mm": [
+      4.5,
+      4.5,
+      69.4,
+      46.5
+    ],
+    "inner_radius_mm": 11.0,
+    "equal_width_mm": 4.0,
+    "frame_top_z_mm": 6.38,
+    "guide_channel_roof_mm": 0.38,
+    "summary": "四角 R15 · 四边等宽 4 mm · 框高 6.38 mm"
+  },
+  "detent": {
+    "root_x": 13.0,
+    "nose_x": 25.0,
+    "nose_y": 48.8,
+    "nose_radius": 0.6,
+    "direction_y": -1,
+    "beam_y": [
+      48.0,
+      48.8
+    ],
+    "beam_thickness_mm": 0.8,
+    "beam_height_mm": 0.8,
+    "effective_length_mm": 11.4,
+    "land_y": 49.1,
+    "pocket_radius": 0.8,
+    "pocket_centres": [
+      [
+        25.0,
+        48.8
+      ],
+      [
+        55.25,
+        48.8
+      ]
+    ],
+    "travel": 30.25,
+    "kinematic_note": "Geometric bending approximation; forces and PLA fatigue untested."
+  },
+  "checks": {
+    "four_valid_single_solids": true,
+    "motion_clear": true,
+    "combined_play_clear": true,
+    "unloaded_end_detents": true,
+    "flexure_deflection_bounded": true,
+    "hard_stops_present": true,
+    "axial_capture_present": true,
+    "shoe_guides_both_sides": true,
+    "fixed_parts_clear": true,
+    "snaps_hold_and_release": true,
+    "base_installation_clear": true,
+    "upper_installation_clear": true,
+    "clamp_bearing_present": true,
+    "phone_clear": true,
+    "expanded_optics_clear": true,
+    "moving_part_inside_case": true,
+    "outer_frame_inside_case": true
+  },
+  "measurements": {
+    "motion_samples": [
+      [
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        2.5208333333333335,
+        0.29999649733304967,
+        7.997531633452506e-10
+      ],
+      [
+        5.041666666666667,
+        0.29999649733304967,
+        7.997531631710646e-10
+      ],
+      [
+        7.5625,
+        0.29999649733304967,
+        7.997531633804922e-10
+      ],
+      [
+        10.083333333333334,
+        0.29999649733304967,
+        7.997531686129318e-10
+      ],
+      [
+        12.604166666666668,
+        0.29999649733304967,
+        7.997531681640804e-10
+      ],
+      [
+        15.125,
+        0.29999649733304967,
+        7.99753163211071e-10
+      ],
+      [
+        17.645833333333336,
+        0.29999649733304967,
+        7.99753163621659e-10
+      ],
+      [
+        20.166666666666668,
+        0.29999649733304967,
+        7.997531666631034e-10
+      ],
+      [
+        22.6875,
+        0.29999649733304967,
+        7.997531632336295e-10
+      ],
+      [
+        25.208333333333336,
+        0.29999649733304967,
+        7.997531633157416e-10
+      ],
+      [
+        27.729166666666668,
+        0.29999649733304967,
+        7.997531647224783e-10
+      ],
+      [
+        30.25,
+        0.0,
+        0.0
+      ]
+    ],
+    "combined_play_samples": [
+      [
+        0.0,
+        -0.15,
+        -0.1,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        -0.15,
+        0.15,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.15,
+        -0.1,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.15,
+        0.15,
+        0.0,
+        0.0
+      ],
+      [
+        15.125,
+        -0.15,
+        -0.1,
+        0.14999649719335134,
+        7.998169506598438e-10
+      ],
+      [
+        15.125,
+        -0.15,
+        0.15,
+        0.14999649719335134,
+        7.998169584180199e-10
+      ],
+      [
+        15.125,
+        0.15,
+        -0.1,
+        0.4499964969046415,
+        7.999488083544956e-10
+      ],
+      [
+        15.125,
+        0.15,
+        0.15,
+        0.4499964969046415,
+        7.999488088457309e-10
+      ],
+      [
+        30.25,
+        -0.15,
+        -0.1,
+        0.0,
+        0.0
+      ],
+      [
+        30.25,
+        -0.15,
+        0.15,
+        0.0,
+        0.0
+      ],
+      [
+        30.25,
+        0.15,
+        -0.1,
+        0.0,
+        0.0
+      ],
+      [
+        30.25,
+        0.15,
+        0.15,
+        0.0,
+        0.0
+      ]
+    ],
+    "stop_samples": [
+      [
+        -0.211,
+        -0.15,
+        -0.1,
+        0.525634098983395
+      ],
+      [
+        -0.211,
+        -0.15,
+        0.15,
+        0.5258840989834419
+      ],
+      [
+        -0.211,
+        0,
+        -0.1,
+        0.012278204176483367
+      ],
+      [
+        -0.211,
+        0,
+        0.15,
+        0.012528204176494055
+      ],
+      [
+        -0.211,
+        0.15,
+        -0.1,
+        0.3484081234796093
+      ],
+      [
+        -0.211,
+        0.15,
+        0.15,
+        0.34865812347965863
+      ],
+      [
+        30.461,
+        -0.15,
+        -0.1,
+        1.0860866854690792
+      ],
+      [
+        30.461,
+        -0.15,
+        0.15,
+        1.0863366854691796
+      ],
+      [
+        30.461,
+        0,
+        -0.1,
+        0.37560645010186616
+      ],
+      [
+        30.461,
+        0,
+        0.15,
+        0.37585645010187413
+      ],
+      [
+        30.461,
+        0.15,
+        -0.1,
+        1.0858466854690225
+      ],
+      [
+        30.461,
+        0.15,
+        0.15,
+        1.0860966854692042
+      ]
+    ],
+    "capture_contact_areas_mm2": [
+      [
+        0.0,
+        82.64773750225247,
+        66.82940080335068
+      ],
+      [
+        15.125,
+        65.26865928540471,
+        52.456968499408006
+      ],
+      [
+        30.25,
+        141.1422186633197,
+        123.9936826484247
+      ]
+    ],
+    "shoe_side_contact_areas_mm2": [
+      [
+        0.0,
+        -0.151,
+        -0.1,
+        1.5999999999998216
+      ],
+      [
+        0.0,
+        0.151,
+        -0.1,
+        0.3999999999999545
+      ],
+      [
+        0.0,
+        -0.151,
+        0.15,
+        1.599999999999822
+      ],
+      [
+        0.0,
+        0.151,
+        0.15,
+        1.3999999999998443
+      ],
+      [
+        15.125,
+        -0.151,
+        -0.1,
+        1.5999999999998213
+      ],
+      [
+        15.125,
+        0.151,
+        -0.1,
+        0.39999999999995445
+      ],
+      [
+        15.125,
+        -0.151,
+        0.15,
+        1.5999999999998218
+      ],
+      [
+        15.125,
+        0.151,
+        0.15,
+        1.3999999999998445
+      ],
+      [
+        30.25,
+        -0.151,
+        -0.1,
+        1.5999999999998218
+      ],
+      [
+        30.25,
+        0.151,
+        -0.1,
+        0.3999999999999545
+      ],
+      [
+        30.25,
+        -0.151,
+        0.15,
+        1.5999999999998218
+      ],
+      [
+        30.25,
+        0.151,
+        0.15,
+        1.3999999999998445
+      ]
+    ],
+    "fixed_pairs_mm3": {
+      "case_base": 0.0,
+      "case_upper": 0.0,
+      "base_upper": 0.0
+    },
+    "snaps": [
+      {
+        "index": 0,
+        "retention_mm2": 0.8903429173527874,
+        "backup_mm2": 6.544999101025119,
+        "released_hook_max_mm3": 0.0,
+        "free_beam_collision_mm3": 0.0,
+        "tool_collision_mm3": [
+          0.0,
+          0.0
+        ],
+        "release_direction": [
+          1.0,
+          0,
+          0
+        ]
+      },
+      {
+        "index": 1,
+        "retention_mm2": 0.890342917352803,
+        "backup_mm2": 6.544999101025162,
+        "released_hook_max_mm3": 0.0,
+        "free_beam_collision_mm3": 0.0,
+        "tool_collision_mm3": [
+          0.0,
+          0.0
+        ],
+        "release_direction": [
+          -1.0,
+          0,
+          0
+        ]
+      },
+      {
+        "index": 2,
+        "retention_mm2": 0.8903429173527794,
+        "backup_mm2": 6.5449991010251125,
+        "released_hook_max_mm3": 0.0,
+        "free_beam_collision_mm3": 0.0,
+        "tool_collision_mm3": [
+          0.0,
+          0.0
+        ],
+        "release_direction": [
+          0,
+          -1.0,
+          0
+        ]
+      },
+      {
+        "index": 3,
+        "retention_mm2": 0.8903429173527801,
+        "backup_mm2": 6.544999101025113,
+        "released_hook_max_mm3": 0.0,
+        "free_beam_collision_mm3": 0.0,
+        "tool_collision_mm3": [
+          0.0,
+          0.0
+        ],
+        "release_direction": [
+          0,
+          -1.0,
+          0
+        ]
+      }
+    ],
+    "base_entry": [
+      [
+        -12,
+        0.0
+      ],
+      [
+        -8,
+        0.0
+      ],
+      [
+        -5,
+        0.0
+      ],
+      [
+        -3,
+        0.0
+      ],
+      [
+        -1.5,
+        0.0
+      ],
+      [
+        -0.5,
+        0.0
+      ],
+      [
+        0,
+        0.0
+      ]
+    ],
+    "upper_entry": [
+      [
+        12,
+        0.0
+      ],
+      [
+        6,
+        0.0
+      ],
+      [
+        3,
+        0.0
+      ],
+      [
+        1.6,
+        0.0
+      ],
+      [
+        1.2,
+        0.0
+      ],
+      [
+        0.8,
+        0.0
+      ],
+      [
+        0.4,
+        0.0
+      ],
+      [
+        0.2,
+        0.0
+      ],
+      [
+        0,
+        0.0
+      ]
+    ],
+    "clamp_area_mm2": {
+      "inner": 71.07273657614999,
+      "outer": 300.02769788778994
+    }
+  },
+  "registered_phone_intersection_mm3": {
+    "modified_case": 0.0,
+    "insert_base": 0.0,
+    "upper_bezel": 0.0,
+    "moving_cover": 0.0,
+    "moving_cover_open": 0.0
+  },
+  "official_optical_intersections_mm3": {
+    "rear1": {
+      "modified_case": 0.0,
+      "insert_base": 0.0,
+      "upper_bezel": 0.0,
+      "moving_cover": 0.0
+    },
+    "rear2": {
+      "modified_case": 0.0,
+      "insert_base": 0.0,
+      "upper_bezel": 0.0,
+      "moving_cover": 0.0
+    },
+    "rear3": {
+      "modified_case": 0.0,
+      "insert_base": 0.0,
+      "upper_bezel": 0.0,
+      "moving_cover": 0.0
+    }
+  },
+  "plate_z_mm": [
+    4.7,
+    5.5
+  ],
+  "vertical_play_mm": [
+    -0.1,
+    0.15
+  ],
+  "minimum_nominal_glass_gap_mm": 0.42,
+  "minimum_at_downward_play_glass_gap_mm": 0.32,
+  "corner_patch_integrated": true,
+  "limitations": [
+    "Geometric prototype; physical PLA forces, fatigue and real-phone fit are untested.",
+    "Reference phone is a simplified third-party model.",
+    "Flash, LiDAR, microphone, front sensors and photographic performance are unverified.",
+    "The local guide roof is 0.38 mm and the cover is 0.8 mm thick; inspect slicer continuity and test print."
+  ],
+  "corner_validation": "corner_patch_report.json",
+  "final_case_validation": "case_finalization_report.json"
+}
